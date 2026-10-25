@@ -59,7 +59,7 @@ Rationale: the app is used by one person; the original spec over-engineered it. 
 - [x] T4.2 Alerts: idempotent daily check for expiry thresholds, expired with stock and late/upcoming deliveries, exposed as `POST /api/cron/daily` protected by `CRON_SECRET`, triggered by a free GitHub Actions schedule (also runs on dashboard load as fallback, at most once per AR day); in-app bell with unread count, mark as read, links. Settings page for expiry thresholds and pharmacy name.
 - [x] T4.2b Web Push: VAPID keys (free), service worker, explicit "Activar notificaciones" button, multiple devices, subscriptions persisted, 404/410 subscriptions disabled, push sent from the outbox after alerts are created (never inside business transactions), click opens the lot/delivery page.
 - [x] T4.3 CSV export: inventory, expiring lots, movements
-- [ ] T4.4 Free deployment + short README (install, admin bootstrap, backup with pg_dump)
+- [x] T4.4 Free deployment + short README (install, admin bootstrap, backup with pg_dump)
 
 ## Acceptance criteria
 Spec sections 1–15; no feature counted done if only its UI exists.
@@ -78,6 +78,7 @@ Spec sections 1–15; no feature counted done if only its UI exists.
 - 2026-10-25: T4.1 87f9938 + T4.2 4e20aa5 (delegated, lean). Dashboard SQL KPIs with drill-down; runDailyAlerts idempotent (lot thresholds once per lot, tightest only; late deliveries look back 30d); POST /api/cron/daily with CRON_SECRET; GitHub Actions daily 08:00 AR; bell + /notificaciones; /configuracion/general. NotificationDispatcher no-op port ready for push. Evidence: lint, typecheck, build pass; test 281/281; integration dashboard+alerts 5/5. Gaps: default min stock/currency stored but unused; list filter forms drop withStock/open params.
 - 2026-10-25: T4.2b b776f0f (delegated, lean). web-push, public/sw.js, manifest, /configuracion/notificaciones (explicit activate, multi-device, test push), WebPushDispatcher (SENT/FAILED, 404/410 disable, 5 failures disable, never throws) wired to daily alerts, stock-level and receipt alerts after commit; `pnpm push:keys`. Evidence: lint, typecheck, build pass; test 288/288; integration push-subscriptions 1/1. Not exercised end to end (needs real VAPID keys + browser).
 - 2026-10-25: T4.3 0f04039 (delegated, lean). GET /api/export/{inventario,lotes,movimientos} reusing list queries and filters; toCsv with BOM, `;`, RFC 4180, formula-injection guard; 50k cap returns 422. Evidence: lint, typecheck, build pass; test 299/299. Not downloaded in a running app.
+- 2026-10-25: T4.4 deployed to Railway (user already pays Hobby): service `web` from GitHub main + clean prod DB `Postgres--fqt` over private network; domain https://web-production-84049.up.railway.app; secrets generated (CRON_SECRET, SESSION_SECRET, VAPID; SESSION_SECRET and VAPID rotated after the CLI echoed the first values locally); GitHub secrets APP_URL + CRON_SECRET. Fixes: pin pnpm 12 (PR15); migrations moved into start command because preDeployCommand did not run (PR16). Evidence: deploy SUCCESS, migrations applied, GET /login 200, cron 401 without secret / 200 with it, daily-alerts workflow run success. README: production, admin bootstrap, backup/restore (PR17). Pending (user): create first admin via `railway ssh` (remote shell is blocked for the agent).
 
 ## Next step
-Finish T3.3 (lean), then T4.1.
+Done. User creates the first production admin; optional: manual check of receipt draft toast, CSV downloads and push on a real device.
