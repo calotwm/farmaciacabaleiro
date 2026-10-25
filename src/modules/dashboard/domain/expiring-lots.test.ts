@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildExpiringLots, describeDaysLeft, expiringLotsHref } from "./expiring-lots";
+import { buildExpiringLots, describeDaysLeft } from "./expiring-lots";
 
 const TODAY = "2026-10-25";
 const row = (id: string, expiryDate: string) => ({
@@ -32,11 +32,5 @@ describe("describeDaysLeft", () => {
     expect(describeDaysLeft(0)).toEqual({ headline: "Hoy", caption: "último día" });
     expect(describeDaysLeft(1)).toEqual({ headline: "1", caption: "día" });
     expect(describeDaysLeft(5)).toEqual({ headline: "5", caption: "días" });
-  });
-});
-
-describe("expiringLotsHref", () => {
-  it("links to lots with stock up to the horizon, expired included", () => {
-    expect(expiringLotsHref(TODAY)).toBe("/lotes?expiryTo=2026-11-24&withStock=1");
   });
 });

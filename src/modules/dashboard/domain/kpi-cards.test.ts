@@ -31,6 +31,11 @@ describe("buildStockCards", () => {
     ]);
   });
 
+  it("says which window the expiring count covers", () => {
+    expect(byId("expiring")?.caption).toBe("hasta 90 días");
+    expect(byId("low")?.caption).toBeUndefined();
+  });
+
   it("marks only non-zero problem cards", () => {
     expect(byId("low")?.tone).toBe("warning");
     expect(byId("out")?.tone).toBe("default");

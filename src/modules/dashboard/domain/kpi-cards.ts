@@ -25,6 +25,8 @@ export interface KpiCard {
   value: number;
   href: string;
   tone: KpiTone;
+  /** Short qualifier shown under the label (e.g. the expiry window the count covers). */
+  caption?: string;
   /** Extra links shown under the value (e.g. each expiry window). */
   breakdown?: { label: string; value: number; href: string }[];
 }
@@ -46,6 +48,7 @@ export function buildStockCards(kpis: StockKpis, today: CalendarDate): KpiCard[]
       value: expiringTotal,
       href: widest ? lotsExpiringHref(today, widest.days) : "/lotes",
       tone: expiringTotal > 0 ? "warning" : "default",
+      caption: widest ? `hasta ${widest.days} días` : undefined,
       breakdown: kpis.expiring.map((window) => ({ label: `${window.days} días`, value: window.count, href: lotsExpiringHref(today, window.days) })),
     },
     {
