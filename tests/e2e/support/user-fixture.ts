@@ -18,6 +18,12 @@ async function remove(id: string, email: string) {
   await prisma.auditLog.deleteMany({
     where: { OR: [{ actorId: id }, { entityId: id }, { after: { path: ["email"], equals: email } }] },
   });
+  // Suppliers named "E2E ..." with their deliveries and receipts (lots and movements they created stay: append-only history).
+  const suppliers = await prisma.supplier.findMany({ where: { name: { startsWith: "E2E " } }, select: { id: true } });
+  const supplierIds = suppliers.map((supplier) => supplier.id);
+  await prisma.receipt.deleteMany({ where: { supplierId: { in: supplierIds } } }); // lines and issues cascade
+  await prisma.scheduledDelivery.deleteMany({ where: { supplierId: { in: supplierIds } } }); // expected items cascade
+  await prisma.supplier.deleteMany({ where: { id: { in: supplierIds } } });
   // Rows the specs create through the UI are named "E2E ...". Products that ever had a stock
   // movement cannot be deleted (append-only history), so those are left in place.
   await prisma.product.deleteMany({ where: { commercialName: { startsWith: "E2E " }, stockMovements: { none: {} } } });

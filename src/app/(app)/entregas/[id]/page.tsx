@@ -7,10 +7,13 @@ import { hasPermission } from "@/modules/auth/domain/permissions";
 import { getCurrentUser } from "@/modules/auth/server";
 import { getDeliveriesModule } from "@/modules/deliveries/composition";
 import { deliveryAlertState } from "@/modules/deliveries/domain/delivery-schedule";
-import { isOpenDelivery } from "@/modules/deliveries/domain/delivery-status";
+import { isGoodsDelivery, isOpenDelivery } from "@/modules/deliveries/domain/delivery-status";
 import { DeliveryAlertBadge, DeliveryStatusBadge, DeliveryTypeBadge } from "@/modules/deliveries/ui/delivery-badges";
 import { DeliveryControls } from "@/modules/deliveries/ui/delivery-controls";
 import { DeliveryDetail } from "@/modules/deliveries/ui/delivery-detail";
+import { getReceivingModule } from "@/modules/receiving/composition";
+import { ReceiptsCard } from "@/modules/receiving/ui/receipts-card";
+import { StartReceiptButton } from "@/modules/receiving/ui/start-receipt-form";
 import { todayInTz } from "@/shared/domain/dates";
 import { hasErrorCode } from "@/shared/domain/errors";
 import { isUuid } from "@/shared/domain/ids";
@@ -34,6 +37,8 @@ export default async function DeliveryPage({ params }: { params: Promise<{ id: s
   const now = new Date();
   const canWrite = hasPermission(user, "deliveries.write");
   const open = isOpenDelivery(delivery.status);
+  const canReceive = open && isGoodsDelivery(delivery.type) && hasPermission(user, "receiving.write");
+  const receipts = hasPermission(user, "receiving.read") ? await getReceivingModule().receivingService.listForDelivery(user, delivery.id) : [];
 
   return (
     <div className="grid gap-4">
@@ -50,8 +55,14 @@ export default async function DeliveryPage({ params }: { params: Promise<{ id: s
           </Button>
         ) : null}
       </div>
+      {canReceive ? (
+        <div className="max-w-xs">
+          <StartReceiptButton deliveryId={delivery.id} label="Recibir mercadería" />
+        </div>
+      ) : null}
       {canWrite ? <DeliveryControls deliveryId={delivery.id} status={delivery.status} type={delivery.type} today={todayInTz(now)} /> : null}
       <DeliveryDetail delivery={delivery} />
+      {receipts.length > 0 ? <ReceiptsCard title="Recepciones de esta entrega" receipts={receipts} /> : null}
     </div>
   );
 }
