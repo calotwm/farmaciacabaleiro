@@ -1,3 +1,4 @@
+import { isValidCalendarDate } from "@/shared/domain/dates";
 import { isUuid } from "@/shared/domain/ids";
 
 /** Helpers for server-side tables driven by URL search params (search, filters, sort, pagination). */
@@ -18,6 +19,12 @@ export function firstParam(value: string | string[] | undefined): string | undef
 export function uuidParam(value: string | string[] | undefined): string | undefined {
   const candidate = firstParam(value);
   return candidate && isUuid(candidate) ? candidate : undefined;
+}
+
+/** A filter param that must be a valid calendar date (YYYY-MM-DD, what `<input type="date">` submits). */
+export function dateParam(value: string | string[] | undefined): string | undefined {
+  const candidate = firstParam(value);
+  return candidate && isValidCalendarDate(candidate) ? candidate : undefined;
 }
 
 export function parsePage(value: string | string[] | undefined): number {

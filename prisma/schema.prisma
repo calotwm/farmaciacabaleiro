@@ -89,6 +89,8 @@ enum DeliveryStatus {
   RECEIVED
   RESCHEDULED
   CANCELLED
+  // Outcome of a non-delivery visit (sales visit, order taking, other): it happened, nothing was received.
+  COMPLETED
 
   @@map("delivery_status")
 }

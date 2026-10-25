@@ -246,7 +246,7 @@ Module `src/modules/suppliers`. Pages: `/proveedores` (list), `/proveedores/nuev
 
 - **Permissions**: `suppliers.read` (list/view; admin and employee) and `suppliers.write` (create, edit, activate/deactivate, supplied
   products; **admin only** by seed: supplier master data is a purchasing decision). Pages show "Acceso denegado" and every use case
-  calls `assertPermission`. The employee role also gets `deliveries.write` (see section 12 onwards) through the seed.
+  calls `assertPermission`. The employee role also gets `deliveries.write` (see section 12) through the seed.
 - **CUIT** (`domain/cuit.ts`): optional and unique. Validated as 11 digits with a known AFIP prefix and the modulo-11 check digit
   (remainder 0 -> 0; a remainder that would give 10 is rejected). It is stored as the 11 digits and shown as `XX-XXXXXXXX-X`, so a
   search matches whatever separators the user typed. Duplicates fail with a field error on `cuit` (also when two inserts race).
@@ -261,7 +261,45 @@ Module `src/modules/suppliers`. Pages: `/proveedores` (list), `/proveedores/nuev
 - **Forms with checkbox groups**: `parseForm(schema, formData, { arrayFields })` collects repeated fields into arrays and `formValues`
   echoes them joined by commas.
 
-## 12. Accepted assumptions
+## 12. Scheduled deliveries
+
+Module `src/modules/deliveries`. Pages: `/entregas` (list or calendar, chosen by `?view=list|calendar`), `/entregas/nueva`,
+`/entregas/[id]`, `/entregas/[id]/editar`, `/entregas/cumplimiento`.
+
+- **Permissions**: `deliveries.read` (view) and `deliveries.write` (schedule, edit, confirm, cancel, reschedule, mark visits done). The
+  seed gives both to the employee role (daily operation) and, as always, everything to admin.
+- **Types**: `DELIVERY` ("Reparto", brings goods), `SALES_VISIT`, `ORDER_TAKING`, `OTHER`. A visit brings no goods, so it can never be
+  received: it ends as **`COMPLETED`** ("Realizada"). Migration `delivery_completed_status` added this value to `delivery_status`
+  (the original enum only had RECEIVED, which only makes sense for goods). The UI separates them: a solid "Reparto" badge versus an
+  outlined visit badge, and different closing actions ("Marcar como realizada" vs. receiving).
+- **Status machine** (`domain/delivery-status.ts`, unit-tested): `SCHEDULED` -> `CONFIRMED`, `RECEIVED` (delivery) or `COMPLETED` (visit),
+  `RESCHEDULED`, `CANCELLED`; `CONFIRMED` -> the same except `CONFIRMED`. `RECEIVED`, `COMPLETED`, `CANCELLED` and `RESCHEDULED` are
+  terminal. `RECEIVED` is only set by confirming a receipt (section 13), never by hand. Invalid transitions fail with a
+  `ConflictError` and a Spanish message.
+- **One transaction per change** that first locks the delivery row (`FOR UPDATE`), so two people acting on the same delivery are
+  serialized (covered by a real-commit race test: two cancels, one wins).
+- **Reschedule = history, not edit**: the original becomes `RESCHEDULED` and a NEW `SCHEDULED` delivery is created with the same
+  supplier, type, order, responsible, notes and expected items, linked through `rescheduled_from_id`. The new date must be in the
+  future and different. Editing cannot change the supplier or the date (a new date is a reschedule) and is only allowed while the delivery
+  is open; the type cannot change once receipts exist.
+- **Time**: the form takes a date and a time in AR time; `zonedInstant(date, "HH:mm")` stores one `timestamptz`. Everything is shown
+  with `formatDateTime`/`formatTime` in `America/Argentina/Buenos_Aires`.
+- **Derived badges** (`domain/delivery-schedule.ts`): "Atrasada" = open (`SCHEDULED`/`CONFIRMED`) and the scheduled instant has passed;
+  "Pendiente de confirmar" = `SCHEDULED` and due within the next 48 hours (late wins).
+- **List** (`/entregas`): filters supplier, type, status, AR date range and "solo atrasadas"; sort by date, supplier, type or status;
+  paginated; everything in the URL. **Calendar**: a server-rendered month table (Monday first, Spanish names, AR days, items coloured by
+  status with the status also in text, max 3 per day then "+N mas" linking to that day's list, month navigation through `?month=YYYY-MM`).
+  Below `md` it falls back to an agenda list of the days that have something.
+- **Compliance** (`domain/compliance.ts`, shown on the supplier page and at `/entregas/cumplimiento`): over deliveries of type
+  `DELIVERY` only. On time = the latest confirmed receipt of the delivery has a confirmation AR day on or before the scheduled AR day;
+  after that it is late. A reschedule counts as not delivered on that date. Open deliveries past their time are "atrasadas" (count against
+  the supplier); open ones not yet due are "pendientes" and left out of the percentage: `onTime / (scheduled - pending)`.
+- **Reminders** (`domain/reminders.ts`): `deliveryReminderDue(delivery, now, offsets = [1, 0])` is a pure function returning the
+  reminders due today (AR calendar day) with a stable `thresholdKey` (`days-before-N`) for the idempotent `AlertEvent`. T4.4 only has to call it.
+  Compared as AR calendar days, so a 00:30 AR delivery is reminded the previous AR evening whatever the server timezone.
+- **Audit actions**: `delivery.create|update|confirm|complete|cancel|reschedule`.
+
+## 13. Accepted assumptions
 
 1. A lot expires at the end of the stated day; `MM/AAAA` means the last day of the month.
 2. Expired lots only allow write-off/return with a reason.
@@ -270,7 +308,7 @@ Module `src/modules/suppliers`. Pages: `/proveedores` (list), `/proveedores/nuev
 5. Single tenant, no POS integration.
 6. Zero budget: anything paid is replaced by a free alternative or skipped and documented.
 
-## 13. Decisions (ADR-style)
+## 14. Decisions (ADR-style)
 
 | # | Decision | Why |
 | --- | --- | --- |
@@ -293,3 +331,8 @@ Module `src/modules/suppliers`. Pages: `/proveedores` (list), `/proveedores/nuev
 | 17 | `COUNT_CORRECTION_IN/OUT` instead of a signed quantity | `stock_movements.quantity > 0` is a DB CHECK and direction comes from the type everywhere else |
 | 18 | CUIT stored as 11 digits, formatted at the edge | Search and uniqueness are independent of separators |
 | 19 | Supplier master data is admin-only (`suppliers.write`); employees read | Purchasing decisions stay with the owner; employees still schedule deliveries and receive goods |
+| 20 | `COMPLETED` delivery status for visits | `RECEIVED` only makes sense for goods; a sales visit or order taking must be closable without a receipt, and never confusable with a received delivery |
+| 21 | Reschedule creates a linked delivery instead of editing the date | History is preserved (`rescheduled_from_id`) and compliance can count reschedules |
+| 22 | Compliance excludes not-yet-due deliveries from the percentage | A delivery scheduled for next week is not a failure; overdue ones are |
+| 23 | Reminders are a pure function keyed by AR calendar days | The T4.4 worker reuses it unchanged and the idempotent `AlertEvent` key (`days-before-N`) is stable across timezones |
+| 24 | Delivery changes lock the delivery row (`FOR UPDATE`) | Concurrent confirm/cancel/reschedule on one delivery are serialized and the status machine sees current state |
