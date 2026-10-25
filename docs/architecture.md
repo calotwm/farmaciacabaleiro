@@ -299,7 +299,49 @@ Module `src/modules/deliveries`. Pages: `/entregas` (list or calendar, chosen by
   Compared as AR calendar days, so a 00:30 AR delivery is reminded the previous AR evening whatever the server timezone.
 - **Audit actions**: `delivery.create|update|confirm|complete|cancel|reschedule`.
 
-## 13. Accepted assumptions
+## 13. Goods receiving
+
+Module `src/modules/receiving`. Pages: `/recepciones` (list with supplier, date range, status and "solo con problemas" filters),
+`/recepciones/nueva` (unscheduled receipt: pick a supplier), `/recepciones/[id]` (editor while DRAFT, read-only detail once CONFIRMED).
+A delivery's page has "Recibir mercadería"; the supplier and delivery pages list their receipts.
+
+- **Permissions**: `receiving.read` (list/detail) and `receiving.write` (start, save, confirm, discard); employee and admin have both.
+- **Start**: from a scheduled delivery (supplier and expected items pre-filled; only a "Reparto" that is `SCHEDULED`/`CONFIRMED`;
+  an existing open draft of that delivery is reused) or, without a delivery, for an active supplier. A draft is saved and resumed any
+  number of times; saving never touches stock. The draft's `idempotencyKey` is generated at creation and travels as a hidden field.
+- **Lines**: one per lot (product by barcode scan or search, lot number, expiry `DD/MM/AAAA` or `MM/AAAA` -> last day of the month,
+  quantity received, damaged quantity, unit cost); several lots of one product are allowed. Scanning a product already on the list
+  moves the cursor to its line instead of adding another. `normalizeReceiptLines` (pure) validates the shape and names every problem
+  with its line ("Linea 2: ...").
+- **Comparison** (`domain/receipt.ts`, shared by the browser preview and the server): `received = good + damaged` per product against what
+  is still pending of the order (expected minus earlier confirmed receipts). Proposed issues: `SHORTAGE` (received < expected),
+  `EXCESS` (more than expected, or a product nobody expected when an order exists), `DAMAGED`. A **partial** receipt proposes no shortage
+  (the rest is still coming). Manual issues (`WRONG_PRODUCT`, `OTHER`) need a description. Proposed issues are recomputed on confirm; the
+  client never decides them.
+- **Partial flag**: only for receipts of a delivery. Partial keeps the delivery open (`SCHEDULED` -> `CONFIRMED`, `CONFIRMED` stays);
+  a complete receipt moves it to `RECEIVED` (and any shortage becomes an issue). The remainder is received with a new receipt.
+- **Confirmation = ONE transaction**: lock the receipt row (`FOR UPDATE`), then the delivery row (the lock deliveries use too),
+  validate (at least one line, no already-expired lot, products exist and are not archived, the delivery is a "Reparto" the status
+  machine still lets be received), replace the content, enter each line's GOOD units (`quantity - damaged`) into stock, store the
+  issues, mark the receipt CONFIRMED (`confirmedBy`, `confirmedAt`) and update the delivery. Lines are processed in product-id order so
+  concurrent receipts cannot deadlock on product locks. **Damaged units never enter stock**; a fully damaged line creates no lot.
+- **Stock entry reuses inventory**: `src/modules/inventory/stock-entry.ts` (`enterStock(db, request)`) runs the inventory module's own
+  `applyEntry` (product lock, "a new lot cannot be received expired", archived products refused, lot created or added to, `ENTRY`
+  movement) inside the receiving transaction. Movements carry `reference_type = 'receipt'`, `reference_id = receipt id`; a lot created
+  from a receipt keeps `receipt_line_id`, supplier, invoice number and unit cost. Inventory exposes this entry point; no stock logic is
+  duplicated in receiving (its `registerMovement` shares the same `planEntry`).
+- **Idempotency**: a repeated confirm with the same key finds the receipt confirmed and returns the first result (`replayed`) without
+  touching anything, whatever content it carries; a different key on a confirmed receipt, or a wrong key on a draft, is a `ConflictError`.
+  A double-click and a concurrent double submit are therefore safe (integration test with two simultaneous confirms).
+- **After commit** (outside the transaction, log-and-swallow): if the receipt has issues, an idempotent `RECEIPT_ISSUE` `AlertEvent`
+  (key: receipt, day) plus a `Notification` per active user who is admin or has `receiving.read`; and the low-stock evaluation of every
+  product that received stock (`StockLevelAlerts` of inventory). A failing notification is reported and never rolls back or fails the receipt.
+- **Audit actions**: `receipt.start|save_draft|discard|confirm`.
+- **Testing**: unit tests for line validation, comparison, issue proposal, partial logic and the form schema; integration tests (rolled back,
+  plus one real double-confirm race) cover spec #4 (lots and movements), spec #5 (duplicate confirm), expired lots, zero quantities, visits,
+  damaged units, partial chains and a throwing alert adapter. E2E: schedule, receive two lots (one partly damaged), confirm, see the stock.
+
+## 14. Accepted assumptions
 
 1. A lot expires at the end of the stated day; `MM/AAAA` means the last day of the month.
 2. Expired lots only allow write-off/return with a reason.
@@ -308,7 +350,7 @@ Module `src/modules/deliveries`. Pages: `/entregas` (list or calendar, chosen by
 5. Single tenant, no POS integration.
 6. Zero budget: anything paid is replaced by a free alternative or skipped and documented.
 
-## 14. Decisions (ADR-style)
+## 15. Decisions (ADR-style)
 
 | # | Decision | Why |
 | --- | --- | --- |
@@ -336,3 +378,8 @@ Module `src/modules/deliveries`. Pages: `/entregas` (list or calendar, chosen by
 | 22 | Compliance excludes not-yet-due deliveries from the percentage | A delivery scheduled for next week is not a failure; overdue ones are |
 | 23 | Reminders are a pure function keyed by AR calendar days | The T4.4 worker reuses it unchanged and the idempotent `AlertEvent` key (`days-before-N`) is stable across timezones |
 | 24 | Delivery changes lock the delivery row (`FOR UPDATE`) | Concurrent confirm/cancel/reschedule on one delivery are serialized and the status machine sees current state |
+| 25 | Receipt confirmation locks receipt, then delivery, then products in id order | One fixed lock order: concurrent confirms never deadlock and a second confirm waits and replays |
+| 26 | Inventory publishes `enterStock` for other modules instead of receiving duplicating stock rules | One implementation of lot creation, expiry and archived-product rules, run inside the caller's transaction |
+| 27 | Damaged units are issues, not stock | Stock only holds sellable units; the damage stays traceable through the receipt issue |
+| 28 | Partial receipts propose no shortage and later receipts expect only the pending quantity | The delivery stays open for the remainder without noise, and a final receipt closes it |
+| 29 | Receipt notifications are published after commit and swallowed on failure | A notification problem must never undo goods already in stock |

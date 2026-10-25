@@ -36,6 +36,92 @@ export function permissionFor(type: MovementCommand["type"]): PermissionKey {
   return isWriteOffOrReturn(type) ? "inventory.writeoff" : "inventory.write";
 }
 
+function assertCanReceiveStock(product: LockedProduct) {
+  if (product.status === "ARCHIVED") {
+    throw new ConflictError("Product is archived", "El producto está archivado: no se le puede ingresar stock.", {
+      productId: ["El producto está archivado: no se le puede ingresar stock."],
+    });
+  }
+}
+
+/** The fields of an ENTRY that decide the lot (shared by the movement form and goods receiving). */
+export type EntryData = Pick<
+  Extract<MovementCommand, { type: "ENTRY" }>,
+  "productId" | "quantity" | "lotNumber" | "expiryDate" | "unitCost" | "supplierId" | "invoiceNumber" | "location" | "notes"
+>;
+
+/** ENTRY creates the lot, or adds to the lot with the same number and expiry date. */
+async function planEntry(
+  tx: StockTx,
+  command: EntryData,
+  today: CalendarDate,
+  at: Date,
+  receiptLineId: string | null = null,
+): Promise<MovementPlan & { lotCreated: boolean; lotId: string }> {
+  assertValidQuantity(command.quantity);
+  const existing = await tx.findLotByKey(command.productId, command.lotNumber, command.expiryDate);
+  if (existing) return { ...planAddition(existing, "ENTRY", command.quantity, today), lotCreated: false, lotId: existing.id };
+
+  assertNewLotExpiry(command.expiryDate, today);
+  const lot = await tx.createLot(
+    {
+      productId: command.productId,
+      lotNumber: command.lotNumber,
+      expiryDate: command.expiryDate,
+      quantity: command.quantity,
+      unitCost: command.unitCost,
+      supplierId: command.supplierId,
+      invoiceNumber: command.invoiceNumber,
+      location: command.location,
+      notes: command.notes,
+      receiptLineId,
+    },
+    at,
+  );
+  // The new lot already holds the entered units; only the movement remains to be recorded.
+  return {
+    updates: [],
+    movements: [{ type: "ENTRY", lotId: lot.id, quantity: command.quantity, balanceAfter: command.quantity }],
+    lotCreated: true,
+    lotId: lot.id,
+  };
+}
+
+export interface ApplyEntryInput {
+  actorId: string;
+  entry: EntryData;
+  today: CalendarDate;
+  at: Date;
+  /** What produced the entry (e.g. "receipt" + the receipt id), stored on the movement. */
+  reference?: { type: string; id: string };
+  receiptLineId?: string | null;
+}
+
+/**
+ * One ENTRY inside a transaction the caller already owns (goods receiving confirms many lines in ONE
+ * transaction): locks the product, applies the entry rules and appends the movement.
+ */
+export async function applyEntry(tx: StockTx, { actorId, entry, today, at, reference, receiptLineId }: ApplyEntryInput) {
+  const product = await tx.lockProduct(entry.productId);
+  if (!product) throw new NotFoundError("product");
+  assertCanReceiveStock(product);
+  const planned = await planEntry(tx, entry, today, at, receiptLineId ?? null);
+  await tx.updateLots(planned.updates);
+  const movements = await tx.addMovements(
+    planned.movements.map((movement) => ({
+      ...movement,
+      productId: entry.productId,
+      reasonId: null,
+      reasonText: null,
+      userId: actorId,
+      occurredAt: at,
+      referenceType: reference?.type ?? null,
+      referenceId: reference?.id ?? null,
+    })),
+  );
+  return { movements, lotId: planned.lotId, lotCreated: planned.lotCreated };
+}
+
 /**
  * Registers stock movements. Every operation is ONE transaction: lock the product, read the lots
  * (current values), plan with the pure domain rules, update the lots and append the movements.
@@ -65,43 +151,6 @@ export function createStockOperations({ uow, alerts, audit, now = () => new Date
     const lot = lots.find((candidate) => candidate.id === lotId);
     if (!lot) throw new ValidationError("Lot not found for product", { lotId: ["El lote elegido no pertenece al producto."] });
     return lot;
-  }
-
-  function assertCanReceiveStock(product: LockedProduct) {
-    if (product.status === "ARCHIVED") {
-      throw new ConflictError("Product is archived", "El producto está archivado: no se le puede ingresar stock.", {
-        productId: ["El producto está archivado: no se le puede ingresar stock."],
-      });
-    }
-  }
-
-  /** ENTRY creates the lot, or adds to an existing one with the same number and expiry date. */
-  async function planEntry(tx: StockTx, command: Extract<MovementCommand, { type: "ENTRY" }>, today: CalendarDate, at: Date): Promise<MovementPlan & { lotCreated: boolean }> {
-    assertValidQuantity(command.quantity);
-    const existing = await tx.findLotByKey(command.productId, command.lotNumber, command.expiryDate);
-    if (existing) return { ...planAddition(existing, "ENTRY", command.quantity, today), lotCreated: false };
-
-    assertNewLotExpiry(command.expiryDate, today);
-    const lot = await tx.createLot(
-      {
-        productId: command.productId,
-        lotNumber: command.lotNumber,
-        expiryDate: command.expiryDate,
-        quantity: command.quantity,
-        unitCost: command.unitCost,
-        supplierId: command.supplierId,
-        invoiceNumber: command.invoiceNumber,
-        location: command.location,
-        notes: command.notes,
-      },
-      at,
-    );
-    // The new lot already holds the entered units; only the movement remains to be recorded.
-    return {
-      updates: [],
-      movements: [{ type: "ENTRY", lotId: lot.id, quantity: command.quantity, balanceAfter: command.quantity }],
-      lotCreated: true,
-    };
   }
 
   async function plan(tx: StockTx, command: MovementCommand, today: CalendarDate, at: Date): Promise<MovementPlan & { lotCreated?: boolean }> {

@@ -23,6 +23,8 @@ export interface NewLotData {
   invoiceNumber: string | null;
   location: string | null;
   notes: string | null;
+  /** The receipt line this lot was created from (goods receiving). */
+  receiptLineId?: string | null;
 }
 
 export interface NewMovementData {

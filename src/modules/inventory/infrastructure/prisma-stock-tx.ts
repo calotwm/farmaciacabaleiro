@@ -74,6 +74,7 @@ class PrismaStockTx implements StockTx {
         invoiceNumber: data.invoiceNumber,
         location: data.location,
         notes: data.notes,
+        receiptLineId: data.receiptLineId ?? null,
         status: "AVAILABLE",
       },
     });
@@ -168,6 +169,11 @@ class PrismaStockTx implements StockTx {
   async closeCount(countId: string, closedAt: Date) {
     await this.tx.stockCount.update({ where: { id: countId }, data: { status: "CLOSED", closedAt } });
   }
+}
+
+/** A stock transaction over a client the caller already owns (another module's transaction). */
+export function createPrismaStockTx(tx: DbClient): StockTx {
+  return new PrismaStockTx(tx);
 }
 
 export class PrismaStockUnitOfWork implements StockUnitOfWork {
