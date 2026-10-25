@@ -12,12 +12,20 @@ export interface FormState {
 
 export const initialFormState: FormState = {};
 
+export interface ParseFormOptions {
+  /** Fields that can repeat (checkbox groups): their values are collected into an array of strings. */
+  arrayFields?: readonly string[];
+}
+
 /** Validates FormData with Zod; returns the parsed data or a ready-to-render error state. */
 export function parseForm<T extends z.ZodType>(
   schema: T,
   formData: FormData,
+  options: ParseFormOptions = {},
 ): { data: z.infer<T> } | { state: FormState } {
-  const result = schema.safeParse(Object.fromEntries(formData));
+  const raw: Record<string, FormDataEntryValue | FormDataEntryValue[]> = Object.fromEntries(formData);
+  for (const field of options.arrayFields ?? []) raw[field] = formData.getAll(field);
+  const result = schema.safeParse(raw);
   if (result.success) return { data: result.data };
   const fieldErrors: Record<string, string[]> = {};
   for (const issue of result.error.issues) {
@@ -39,11 +47,15 @@ export function errorToFormState(error: unknown): FormState {
 
 const SENSITIVE_FIELD = /password|token/i;
 
-/** The text fields of a submission (files ignored). Password and token fields are never echoed back. */
+/**
+ * The text fields of a submission (files ignored). Password and token fields are never echoed back.
+ * A repeated field (checkbox group) is echoed as its values joined by commas.
+ */
 export function formValues(formData: FormData): Record<string, string> {
   const values: Record<string, string> = {};
   for (const [key, value] of formData.entries()) {
-    if (typeof value === "string" && !SENSITIVE_FIELD.test(key)) values[key] = value;
+    if (typeof value !== "string" || SENSITIVE_FIELD.test(key)) continue;
+    values[key] = key in values ? `${values[key]},${value}` : value;
   }
   return values;
 }

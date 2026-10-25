@@ -240,7 +240,28 @@ Pages `/conteos` (list, open) and `/conteos/[id]`. Permission: `inventory.count`
 - Migration `count_correction_direction` added `COUNT_CORRECTION_IN/OUT` to `stock_movement_type`: the original
   `COUNT_CORRECTION` had no direction and movements store a positive quantity. The old value stays in the enum (never written).
 
-## 11. Accepted assumptions
+## 11. Suppliers
+
+Module `src/modules/suppliers`. Pages: `/proveedores` (list), `/proveedores/nuevo`, `/proveedores/[id]` (detail), `/proveedores/[id]/editar`.
+
+- **Permissions**: `suppliers.read` (list/view; admin and employee) and `suppliers.write` (create, edit, activate/deactivate, supplied
+  products; **admin only** by seed: supplier master data is a purchasing decision). Pages show "Acceso denegado" and every use case
+  calls `assertPermission`. The employee role also gets `deliveries.write` (see section 12 onwards) through the seed.
+- **CUIT** (`domain/cuit.ts`): optional and unique. Validated as 11 digits with a known AFIP prefix and the modulo-11 check digit
+  (remainder 0 -> 0; a remainder that would give 10 is rejected). It is stored as the 11 digits and shown as `XX-XXXXXXXX-X`, so a
+  search matches whatever separators the user typed. Duplicates fail with a field error on `cuit` (also when two inserts race).
+- **Visit days** are ISO weekdays in `suppliers.visit_days` (1 = Monday ... 7 = Sunday), edited as a checkbox group. Delivery hours are
+  free text; the lead time is whole days (0..365).
+- **Status**: `INACTIVE` suppliers keep their history but are not offered when scheduling deliveries or receiving goods. There is no
+  delete (deliveries, receipts and lots reference suppliers).
+- **Supplied products** (`supplier_products`): add by text search or barcode scan (`ProductPicker`, backed by the
+  `searchProductsAction` server action: exact barcode first, otherwise name/ingredient/brand/code/SKU), remove with confirmation. Archived
+  products cannot be added; a product can be linked once. Adding or removing is audited on the supplier.
+- **Audit actions**: `supplier.create|update|activate|deactivate`, `supplier.product.add|remove`.
+- **Forms with checkbox groups**: `parseForm(schema, formData, { arrayFields })` collects repeated fields into arrays and `formValues`
+  echoes them joined by commas.
+
+## 12. Accepted assumptions
 
 1. A lot expires at the end of the stated day; `MM/AAAA` means the last day of the month.
 2. Expired lots only allow write-off/return with a reason.
@@ -249,7 +270,7 @@ Pages `/conteos` (list, open) and `/conteos/[id]`. Permission: `inventory.count`
 5. Single tenant, no POS integration.
 6. Zero budget: anything paid is replaced by a free alternative or skipped and documented.
 
-## 12. Decisions (ADR-style)
+## 13. Decisions (ADR-style)
 
 | # | Decision | Why |
 | --- | --- | --- |
@@ -270,3 +291,5 @@ Pages `/conteos` (list, open) and `/conteos/[id]`. Permission: `inventory.count`
 | 15 | Planners are pure functions over lot state | The same FEFO plan runs in the browser preview and on the server, and is unit-testable without a database |
 | 16 | Count corrections computed against the current lot quantity | Snapshot-based deltas would double count movements made while the count is open |
 | 17 | `COUNT_CORRECTION_IN/OUT` instead of a signed quantity | `stock_movements.quantity > 0` is a DB CHECK and direction comes from the type everywhere else |
+| 18 | CUIT stored as 11 digits, formatted at the edge | Search and uniqueness are independent of separators |
+| 19 | Supplier master data is admin-only (`suppliers.write`); employees read | Purchasing decisions stay with the owner; employees still schedule deliveries and receive goods |
