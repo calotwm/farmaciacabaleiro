@@ -23,6 +23,15 @@ describe("form state helpers", () => {
     expect(formValues(data)).toEqual({ name: "x" });
   });
 
+  it("collects repeated fields into arrays on request and echoes them joined", () => {
+    const data = new FormData();
+    data.append("days", "1");
+    data.append("days", "5");
+    const schema = z.object({ days: z.array(z.string()) });
+    expect(parseForm(schema, data, { arrayFields: ["days"] })).toEqual({ data: { days: ["1", "5"] } });
+    expect(formValues(data)).toEqual({ days: "1,5" });
+  });
+
   it("maps field errors from validation and conflict errors", () => {
     expect(errorToFormState(new ValidationError("x", { name: ["falta"] })).fieldErrors).toEqual({ name: ["falta"] });
     const conflict = new ConflictError("dup", "Ya existe.", { barcode: ["Ya existe."] });

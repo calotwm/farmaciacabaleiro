@@ -34,6 +34,7 @@ const EMPLOYEE_PERMISSIONS = [
   "inventory.count",
   "suppliers.read",
   "deliveries.read",
+  "deliveries.write",
   "receiving.read",
   "receiving.write",
   "reports.read",
