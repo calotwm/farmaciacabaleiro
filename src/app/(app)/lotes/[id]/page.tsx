@@ -9,6 +9,8 @@ import { getCurrentUser } from "@/modules/auth/server";
 import { getInventoryModule } from "@/modules/inventory/composition";
 import { LotDetail } from "@/modules/inventory/ui/lot-detail";
 import { MovementsTable } from "@/modules/inventory/ui/movements-table";
+import { readGeneralSettings } from "@/modules/settings/infrastructure/read-general-settings";
+import { prisma } from "@/shared/infrastructure/db/prisma";
 import { DEFAULT_PAGE_SIZE, parsePage, type SearchParams } from "@/shared/application/list-query";
 import { hasErrorCode } from "@/shared/domain/errors";
 import { isUuid } from "@/shared/domain/ids";
@@ -28,6 +30,7 @@ export default async function LotPage({ params, searchParams }: { params: Promis
     throw error;
   });
   if (!detail) notFound();
+  const { expiryThresholds: thresholds } = await readGeneralSettings(prisma);
 
   const { lot, today } = detail;
   const history = await stockQueries.listMovements(user, { lotId: id, page, pageSize: DEFAULT_PAGE_SIZE });
@@ -67,7 +70,7 @@ export default async function LotPage({ params, searchParams }: { params: Promis
           ) : null}
         </div>
       </div>
-      <LotDetail lot={lot} today={today} />
+      <LotDetail lot={lot} today={today} thresholds={thresholds} />
       <section className="grid gap-3" aria-labelledby="lot-history">
         <h2 id="lot-history" className="text-lg font-medium">
           Historial de movimientos

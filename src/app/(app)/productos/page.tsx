@@ -42,6 +42,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
     categoryId: uuidParam(sp.categoryId),
     supplierId: uuidParam(sp.supplierId),
     status: parseOption(sp.status, PRODUCT_STATUS_FILTERS, ""),
+    stock: parseOption(sp.stock, ["", "low", "out"] as const, "") || undefined,
     sort: parseOption(sp.sort, PRODUCT_SORT_FIELDS, "name"),
     dir: parseSortDirection(sp.dir, "asc"),
     page: parsePage(sp.page),
@@ -53,7 +54,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
     catalogService.listSupplierOptions(user),
   ]);
 
-  const params = { q: query.search, categoryId: query.categoryId, supplierId: query.supplierId, status: query.status || undefined };
+  const params = { q: query.search, categoryId: query.categoryId, supplierId: query.supplierId, status: query.status || undefined, stock: query.stock };
 
   return (
     <div className="grid gap-4">

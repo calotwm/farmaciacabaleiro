@@ -11,7 +11,9 @@ import { ProductStockSection } from "@/modules/inventory/ui/product-stock";
 import { ArchiveButton } from "@/modules/catalog/ui/archive-button";
 import { ProductDetail } from "@/modules/catalog/ui/product-detail";
 import { ProductStatusBadge } from "@/modules/catalog/ui/product-status-badge";
+import { readGeneralSettings } from "@/modules/settings/infrastructure/read-general-settings";
 import { hasErrorCode } from "@/shared/domain/errors";
+import { prisma } from "@/shared/infrastructure/db/prisma";
 import { isUuid } from "@/shared/domain/ids";
 
 export const metadata: Metadata = { title: "Producto - Farmacia Cabaleiro" };
@@ -33,6 +35,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const archived = product.status === "ARCHIVED";
   const canReadStock = hasPermission(user, "inventory.read");
   const stock = canReadStock ? await getInventoryModule().stockQueries.getProductStock(user, product.id) : null;
+  const { expiryThresholds: thresholds } = await readGeneralSettings(prisma);
   const canRegister = hasPermission(user, "inventory.write") && !archived;
   return (
     <div className="grid gap-4">
@@ -62,7 +65,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           ) : null}
         </div>
       </div>
-      {stock ? <ProductStockSection stock={stock} productId={product.id} /> : null}
+      {stock ? <ProductStockSection stock={stock} productId={product.id} thresholds={thresholds} /> : null}
       <ProductDetail product={product} />
     </div>
   );

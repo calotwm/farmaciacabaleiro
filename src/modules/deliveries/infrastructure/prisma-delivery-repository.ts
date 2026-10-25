@@ -90,6 +90,7 @@ function buildListWhere(query: DeliveryListQuery): Prisma.ScheduledDeliveryWhere
   // Day bounds are AR midnights: `to` is inclusive, so the range ends at the start of the next day.
   if (query.from) and.push({ scheduledAt: { gte: startOfDayInTz(query.from) } });
   if (query.to) and.push({ scheduledAt: { lt: startOfDayInTz(addDays(query.to, 1)) } });
+  if (query.openOnly) and.push({ status: { in: [...OPEN_DELIVERY_STATUSES] } });
   if (query.lateOnly) and.push({ status: { in: [...OPEN_DELIVERY_STATUSES] }, scheduledAt: { lt: query.now } });
   return { AND: and };
 }

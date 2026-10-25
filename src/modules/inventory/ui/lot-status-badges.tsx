@@ -24,8 +24,17 @@ export function daysLeftLabel(daysLeft: number): string {
  * Presentational: the expiry bucket (normal / advertencia / crítico / vencido, from `expiry-status.ts`)
  * plus the stored state when the lot is held or empty (cuarentena / bloqueado / agotado).
  */
-export function LotStatusBadges({ lot, today }: { lot: Pick<LotState, "expiryDate" | "status">; today: CalendarDate }) {
-  const { effectiveStatus, expiry } = describeLot(lot, today);
+export function LotStatusBadges({
+  lot,
+  today,
+  thresholds,
+}: {
+  lot: Pick<LotState, "expiryDate" | "status">;
+  today: CalendarDate;
+  /** Configured expiry thresholds (settings); defaults when omitted. */
+  thresholds?: readonly number[];
+}) {
+  const { effectiveStatus, expiry } = describeLot(lot, today, { thresholds });
   const bucket = EXPIRY_BADGES[expiry.status];
   const held = effectiveStatus === "QUARANTINE" || effectiveStatus === "BLOCKED" || effectiveStatus === "DEPLETED" ? effectiveStatus : null;
   return (

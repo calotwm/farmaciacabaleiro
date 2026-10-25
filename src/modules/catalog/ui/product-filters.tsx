@@ -4,7 +4,7 @@ import { SelectField, type SelectOption } from "@/components/select-field";
 import { Button } from "@/components/ui/button";
 
 interface ProductFiltersProps {
-  values: { q?: string; categoryId?: string; supplierId?: string; status?: string; sort: string; dir: string };
+  values: { q?: string; categoryId?: string; supplierId?: string; status?: string; stock?: string; sort: string; dir: string };
   categories: SelectOption[];
   suppliers: SelectOption[];
 }
@@ -14,6 +14,11 @@ const STATUS_OPTIONS: SelectOption[] = [
   { value: "INACTIVE", label: "Inactivos" },
   { value: "ARCHIVED", label: "Archivados" },
   { value: "ALL", label: "Todos (incluye archivados)" },
+];
+
+const STOCK_OPTIONS: SelectOption[] = [
+  { value: "low", label: "Stock bajo" },
+  { value: "out", label: "Sin stock" },
 ];
 
 /** GET form: filters live in the URL, so results are shareable and need no JavaScript. */
@@ -35,6 +40,7 @@ export function ProductFilters({ values, categories, suppliers }: ProductFilters
       <SelectField name="categoryId" label="Categoría" options={categories} placeholder="Todas" defaultValue={values.categoryId ?? ""} />
       <SelectField name="supplierId" label="Proveedor habitual" options={suppliers} placeholder="Todos" defaultValue={values.supplierId ?? ""} />
       <SelectField name="status" label="Estado" options={STATUS_OPTIONS} placeholder="Activos e inactivos" defaultValue={values.status ?? ""} />
+      <SelectField name="stock" label="Stock" options={STOCK_OPTIONS} placeholder="Todos" defaultValue={values.stock ?? ""} />
       <div className="flex items-end gap-2">
         <Button type="submit">Buscar</Button>
         <Button asChild variant="outline">
