@@ -14,8 +14,14 @@ const newPassword = z
   .min(MIN_PASSWORD_LENGTH, `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`)
   .max(MAX_PASSWORD_LENGTH, `La contraseña no puede superar los ${MAX_PASSWORD_LENGTH} caracteres.`);
 
+const identifier = z
+  .string({ error: "Ingresá tu usuario o email." })
+  .trim()
+  .min(1, "Ingresá tu usuario o email.")
+  .max(254, "El usuario o email es demasiado largo.");
+
 export const loginSchema = z.object({
-  email,
+  identifier,
   password: z.string({ error: "Ingresá tu contraseña." }).min(1, "Ingresá tu contraseña."),
   next: z.string().optional(),
 });

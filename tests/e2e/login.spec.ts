@@ -5,7 +5,7 @@ const password = () => process.env.E2E_PASSWORD ?? "";
 
 async function login(page: Page, pass = password()) {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(email());
+  await page.getByLabel("Usuario o email").fill(email());
   await page.getByLabel("Contraseña").fill(pass);
   await page.getByRole("button", { name: "Ingresar" }).click();
 }
@@ -19,7 +19,7 @@ test("shows a generic error for a wrong password", async ({ page }) => {
 test("validates the form on the server with Spanish messages", async ({ page }) => {
   await page.goto("/login");
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await expect(page.getByText("Ingresá tu email.")).toBeVisible();
+  await expect(page.getByText("Ingresá tu usuario o email.")).toBeVisible();
 });
 
 test("signs in, shows the app shell and signs out", async ({ page }) => {

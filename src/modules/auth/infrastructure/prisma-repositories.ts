@@ -31,6 +31,11 @@ export class PrismaUserRepository implements UserRepository {
     return user ? toRecord(user) : null;
   }
 
+  async findByUsername(username: string) {
+    const user = await this.prisma.user.findUnique({ where: { username }, include: { role: true } });
+    return user ? toRecord(user) : null;
+  }
+
   async findById(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id }, include: { role: true } });
     return user ? toRecord(user) : null;

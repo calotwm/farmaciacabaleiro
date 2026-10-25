@@ -25,7 +25,7 @@ export async function loginAction(_prev: FormState, formData: FormData): Promise
   let target: string;
   try {
     const result = await getAuthModule().authService.login({
-      email: parsed.data.email,
+      identifier: parsed.data.identifier,
       password: parsed.data.password,
       ip: await getClientIp(),
       userAgent: await getUserAgent(),

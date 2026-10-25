@@ -35,7 +35,8 @@ export interface AuthServiceDeps {
 }
 
 export interface LoginInput {
-  email: string;
+  /** Email (contains "@") or username. */
+  identifier: string;
   password: string;
   ip: string;
   userAgent?: string;
@@ -56,7 +57,7 @@ export function createAuthService(deps: AuthServiceDeps) {
   let dummyHash: Promise<string> | undefined;
 
   async function login(input: LoginInput): Promise<LoginResult> {
-    const address = normalizeEmail(input.email);
+    const address = normalizeEmail(input.identifier);
     const current = now();
 
     const failures = await attempts.countRecentFailures({
@@ -69,7 +70,7 @@ export function createAuthService(deps: AuthServiceDeps) {
       throw new RateLimitError("Too many failed login attempts");
     }
 
-    const user = await users.findByEmail(address);
+    const user = address.includes("@") ? await users.findByEmail(address) : await users.findByUsername(address);
     dummyHash ??= hasher.hash("timing-equalizer-password");
     const passwordOk = await hasher.verify(user?.passwordHash ?? (await dummyHash), input.password);
 

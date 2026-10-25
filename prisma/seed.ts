@@ -1,6 +1,9 @@
-// Seeds reference data only (no users, no demo products). Idempotent: safe to re-run.
+// Seeds reference data (no demo products) and, optionally, the first admin from ADMIN_USERNAME/ADMIN_PASSWORD.
+// Idempotent: safe to re-run.
 import "dotenv/config";
 import type { AdjustmentReasonKind } from "../src/generated/prisma/client";
+import { validatePassword } from "../src/modules/auth/domain/password-policy";
+import { Argon2PasswordHasher } from "../src/modules/auth/infrastructure/argon2-password-hasher";
 import { createPrismaClient } from "../src/shared/infrastructure/db/create-client";
 
 const prisma = createPrismaClient();
@@ -64,6 +67,36 @@ const DEFAULT_SETTINGS: Record<string, unknown> = {
   "locale.timezone": "America/Argentina/Buenos_Aires",
 };
 
+/**
+ * Creates the first admin from ADMIN_USERNAME/ADMIN_PASSWORD when both are set and the username is free.
+ * Never touches an existing user and never logs the password.
+ */
+async function bootstrapAdmin(adminRoleId: string) {
+  const username = process.env.ADMIN_USERNAME?.trim().toLowerCase();
+  const password = process.env.ADMIN_PASSWORD;
+  if (!username || !password) return;
+
+  if (await prisma.user.findUnique({ where: { username } })) {
+    console.log(`Admin "${username}" already exists, skipping.`);
+    return;
+  }
+  const problems = validatePassword(password);
+  if (problems.length > 0) {
+    console.warn(`ADMIN_PASSWORD rejected, admin not created: ${problems.join(" ")}`);
+    return;
+  }
+  await prisma.user.create({
+    data: {
+      username,
+      email: `${username}@local.invalid`,
+      name: process.env.ADMIN_NAME?.trim() || "Administrador",
+      passwordHash: await new Argon2PasswordHasher().hash(password),
+      roleId: adminRoleId,
+    },
+  });
+  console.log(`Admin "${username}" created.`);
+}
+
 async function main() {
   const [admin, employee] = await Promise.all(
     [
@@ -105,6 +138,8 @@ async function main() {
   for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
     await prisma.setting.upsert({ where: { key }, update: {}, create: { key, value: value as never } });
   }
+
+  await bootstrapAdmin(admin.id);
 
   console.log(
     `Seed complete: 2 roles, ${permissions.length} permissions, ${CATEGORIES.length} categories, ` +
