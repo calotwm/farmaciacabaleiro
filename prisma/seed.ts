@@ -1,10 +1,11 @@
-// Seeds reference data (no demo products) and, optionally, the first admin from ADMIN_USERNAME/ADMIN_PASSWORD.
+// Seeds reference data (demo products only when SEED_DEMO=true) and, optionally, the first admin from ADMIN_USERNAME/ADMIN_PASSWORD.
 // Idempotent: safe to re-run.
 import "dotenv/config";
 import type { AdjustmentReasonKind } from "../src/generated/prisma/client";
 import { validatePassword } from "../src/modules/auth/domain/password-policy";
 import { Argon2PasswordHasher } from "../src/modules/auth/infrastructure/argon2-password-hasher";
 import { createPrismaClient } from "../src/shared/infrastructure/db/create-client";
+import { seedDemo } from "./seed-demo";
 
 const prisma = createPrismaClient();
 
@@ -140,6 +141,9 @@ async function main() {
   }
 
   await bootstrapAdmin(admin.id);
+
+  // Opt-in demo products/stock (idempotent); never runs unless explicitly requested.
+  if (process.env.SEED_DEMO === "true") await seedDemo(prisma);
 
   console.log(
     `Seed complete: 2 roles, ${permissions.length} permissions, ${CATEGORIES.length} categories, ` +
