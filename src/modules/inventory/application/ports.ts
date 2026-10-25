@@ -162,6 +162,30 @@ export interface LotListItem extends LotState {
   initialQuantity: number;
 }
 
+/** Filters shared by the expirations list, its summary and the CSV export. */
+export interface ExpirationSummaryQuery {
+  today: CalendarDate;
+  /** Cumulative windows in days (lots expiring from today through today + N). */
+  windows: readonly number[];
+  /** Inclusive calendar ranges to total separately (e.g. the next months). */
+  ranges: ReadonlyArray<{ key: string; from: CalendarDate; to: CalendarDate }>;
+  search?: string;
+  categoryId?: string;
+  supplierId?: string;
+}
+
+export interface ExpirationFigures {
+  lots: number;
+  units: number;
+}
+
+export interface ExpirationSummary {
+  /** Lots with units on hand that are already expired. */
+  expired: ExpirationFigures;
+  windows: Array<ExpirationFigures & { days: number }>;
+  ranges: Array<ExpirationFigures & { key: string }>;
+}
+
 export const MOVEMENT_SORT_FIELDS = ["occurredAt"] as const;
 
 export interface MovementListQuery {
@@ -239,6 +263,8 @@ export interface StockReadRepository {
   getCount(id: string): Promise<CountDetail | null>;
   listLots(query: LotListQuery): Promise<Page<LotListItem>>;
   getLot(id: string): Promise<LotListItem | null>;
+  /** Lot and unit totals of lots with stock, per expired / window / range, under the same filters as `listLots`. */
+  expirationSummary(query: ExpirationSummaryQuery): Promise<ExpirationSummary>;
   /** Every lot of a product (including depleted/expired), for the stock breakdown and FEFO table. */
   listProductLots(productId: string): Promise<LotListItem[]>;
   listMovements(query: MovementListQuery): Promise<Page<MovementListItem>>;

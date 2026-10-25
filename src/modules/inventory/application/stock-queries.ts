@@ -4,7 +4,7 @@ import { NotFoundError } from "@/shared/domain/errors";
 import { firstUsableLot, sortFefo } from "../domain/fefo";
 import type { ReasonKind } from "../domain/movement-type";
 import { type StockBreakdown, computeStockBreakdown } from "../domain/stock-breakdown";
-import type { LotListItem, LotListQuery, MovementListQuery, StockReadRepository } from "./ports";
+import type { ExpirationSummaryQuery, LotListItem, LotListQuery, MovementListQuery, StockReadRepository } from "./ports";
 
 export interface StockQueriesDeps {
   reads: StockReadRepository;
@@ -28,6 +28,13 @@ export function createStockQueries({ reads, now = () => new Date() }: StockQueri
     assertPermission(actor, "inventory.read");
     const current = today();
     return { today: current, ...(await reads.listLots({ ...query, today: current })) };
+  }
+
+  /** Lot and unit totals for the expirations page (expired, cumulative windows, calendar ranges). */
+  async function expirationSummary(actor: AuthUser, query: Omit<ExpirationSummaryQuery, "today">) {
+    assertPermission(actor, "inventory.read");
+    const current = today();
+    return { today: current, summary: await reads.expirationSummary({ ...query, today: current }) };
   }
 
   async function getLot(actor: AuthUser, id: string) {
@@ -83,7 +90,7 @@ export function createStockQueries({ reads, now = () => new Date() }: StockQueri
     return { today: today(), count };
   }
 
-  return { listLots, getLot, getProductStock, listMovements, listReasons, listMovementUsers, listSupplierOptions, listCounts, getCount };
+  return { listLots, expirationSummary, getLot, getProductStock, listMovements, listReasons, listMovementUsers, listSupplierOptions, listCounts, getCount };
 }
 
 export type StockQueries = ReturnType<typeof createStockQueries>;
