@@ -34,7 +34,7 @@ const STATUS_OPTIONS: SelectOption[] = [
 /** GET form: every filter lives in the URL. */
 export function LotFilters({ values, productName, categories, suppliers }: LotFiltersProps) {
   return (
-    <form method="get" action="/lotes" role="search" aria-label="Filtros de lotes" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <form method="get" action="/lotes" role="search" aria-label="Filtros de lotes" className="bg-card grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-4">
       <input type="hidden" name="sort" value={values.sort} />
       <input type="hidden" name="dir" value={values.dir} />
       {values.productId ? <input type="hidden" name="productId" value={values.productId} /> : null}

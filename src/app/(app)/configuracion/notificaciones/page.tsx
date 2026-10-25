@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SettingsSection } from "@/components/settings-section";
 import { getAlertsModule } from "@/modules/alerts/composition";
 import { PushSettings } from "@/modules/alerts/ui/push-settings";
 import { requireUser } from "@/modules/auth/server";
@@ -13,12 +14,10 @@ export default async function PushSettingsPage() {
   const configured = isWebPushConfigured(env);
   const devices = configured ? await getAlertsModule().pushSubscriptions.list(user.id) : [];
   return (
-    <div className="grid max-w-3xl gap-4">
-      <h1 className="text-2xl font-semibold">Notificaciones en el dispositivo</h1>
-      <p className="text-muted-foreground text-sm">
-        Recibí los avisos de la farmacia como notificaciones del navegador, aunque no tengas la aplicación abierta. Las alertas dentro de la
-        aplicación siguen funcionando igual.
-      </p>
+    <SettingsSection
+      title="Notificaciones en el dispositivo"
+      description="Recibí los avisos de la farmacia como notificaciones del navegador, aunque no tengas la aplicación abierta. Las alertas dentro de la aplicación siguen funcionando igual."
+    >
       <PushSettings
         publicKey={configured ? (env.VAPID_PUBLIC_KEY ?? null) : null}
         devices={devices.map((d) => ({
@@ -29,6 +28,6 @@ export default async function PushSettingsPage() {
           disabled: d.disabledAt !== null,
         }))}
       />
-    </div>
+    </SettingsSection>
   );
 }

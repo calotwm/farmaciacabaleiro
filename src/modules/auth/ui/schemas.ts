@@ -39,6 +39,17 @@ export const resetPasswordSchema = z
     message: "Las contraseñas no coinciden.",
   });
 
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string({ error: "Ingresá tu contraseña actual." }).min(1, "Ingresá tu contraseña actual."),
+    password: newPassword,
+    confirmPassword: z.string(),
+  })
+  .refine((value) => value.password === value.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Las contraseñas no coinciden.",
+  });
+
 export const createUserSchema = z.object({
   name: z.string({ error: "Ingresá el nombre." }).trim().min(1, "Ingresá el nombre.").max(120, "El nombre es demasiado largo."),
   email,

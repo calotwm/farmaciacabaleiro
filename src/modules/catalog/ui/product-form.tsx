@@ -19,10 +19,14 @@ interface ProductFormProps {
   suppliers: SelectOption[];
   /** Present when editing. */
   product?: ProductRecord;
+  /** Minimum stock a NEW product starts with (settings). */
+  defaultMinStock?: number;
+  /** ISO 4217 code from the settings, shown in the price labels. */
+  currency?: string;
 }
 
-function defaultsFrom(product?: ProductRecord): Record<string, string> {
-  if (!product) return { status: "ACTIVE", minStock: "0", costPrice: "0.00" };
+function defaultsFrom(product?: ProductRecord, defaultMinStock = 0): Record<string, string> {
+  if (!product) return { status: "ACTIVE", minStock: String(defaultMinStock), costPrice: "0.00" };
   return {
     code: product.code,
     commercialName: product.commercialName,
@@ -53,14 +57,14 @@ const STATUS_OPTIONS: SelectOption[] = [
   { value: "INACTIVE", label: "Inactivo" },
 ];
 
-export function ProductForm({ categories, units, suppliers, product }: ProductFormProps) {
+export function ProductForm({ categories, units, suppliers, product, defaultMinStock, currency = "ARS" }: ProductFormProps) {
   const isEdit = !!product;
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     isEdit ? updateProductAction : createProductAction,
     initialFormState,
   );
   const skuRef = useRef<HTMLInputElement>(null);
-  const defaults = { ...defaultsFrom(product), ...state.values };
+  const defaults = { ...defaultsFrom(product, defaultMinStock), ...state.values };
   const errors = state.fieldErrors ?? {};
 
   function field(name: string) {
@@ -102,8 +106,8 @@ export function ProductForm({ categories, units, suppliers, product }: ProductFo
         <legend className="mb-2 text-lg font-medium">Stock y precios</legend>
         <FormField {...field("minStock")} label="Stock mínimo" inputMode="numeric" />
         <FormField {...field("maxStock")} label="Stock máximo" inputMode="numeric" />
-        <FormField {...field("costPrice")} label="Precio de costo (ARS)" inputMode="decimal" />
-        <FormField {...field("salePrice")} label="Precio de venta (ARS)" inputMode="decimal" />
+        <FormField {...field("costPrice")} label={`Precio de costo (${currency})`} inputMode="decimal" />
+        <FormField {...field("salePrice")} label={`Precio de venta (${currency})`} inputMode="decimal" />
         <SelectField {...field("usualSupplierId")} label="Proveedor habitual" options={suppliers} placeholder="Sin proveedor" />
         <FormField {...field("location")} label="Ubicación" hint="Estante, góndola o depósito." />
         <SelectField {...field("status")} label="Estado" options={STATUS_OPTIONS} />

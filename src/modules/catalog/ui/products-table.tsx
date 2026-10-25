@@ -17,7 +17,7 @@ interface ProductsTableProps {
 export function ProductsTable({ products, sort, dir, params }: ProductsTableProps) {
   const head = { sort, dir, basePath: "/productos", params };
   return (
-    <Table>
+    <Table framed>
       <TableHeader>
         <TableRow>
           <SortableHead {...head} label="Nombre" field="name" />

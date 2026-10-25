@@ -16,7 +16,7 @@ const STATUS_OPTIONS: SelectOption[] = [
 /** GET form: filters live in the URL, so results are shareable and need no JavaScript. */
 export function SupplierFilters({ values }: SupplierFiltersProps) {
   return (
-    <form method="get" action="/proveedores" role="search" aria-label="Filtros de proveedores" className="grid gap-3 sm:grid-cols-3">
+    <form method="get" action="/proveedores" role="search" aria-label="Filtros de proveedores" className="bg-card grid gap-3 rounded-xl border p-4 sm:grid-cols-3">
       <input type="hidden" name="sort" value={values.sort} />
       <input type="hidden" name="dir" value={values.dir} />
       <div className="sm:col-span-2">

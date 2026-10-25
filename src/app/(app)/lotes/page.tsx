@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/page-header";
 import Link from "next/link";
 import { AccessDenied } from "@/components/access-denied";
 import { Pagination } from "@/components/pagination";
@@ -77,19 +78,22 @@ export default async function LotsPage({ searchParams }: { searchParams: Promise
 
   return (
     <div className="grid gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Lotes</h1>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline">
-            <a href={buildHref("/api/export/lotes", { ...params, sort: query.sort, dir: query.dir })}>Exportar CSV</a>
-          </Button>
-          {hasPermission(user, "inventory.write") ? (
-            <Button asChild>
-              <Link href="/movimientos/nuevo?type=ENTRY">Ingresar lote</Link>
+      <PageHeader
+        title="Lotes"
+        description="Cada lote con su vencimiento, cantidad y estado."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <a href={buildHref("/api/export/lotes", { ...params, sort: query.sort, dir: query.dir })}>Exportar CSV</a>
             </Button>
-          ) : null}
-        </div>
-      </div>
+            {hasPermission(user, "inventory.write") ? (
+              <Button asChild>
+                <Link href="/movimientos/nuevo?type=ENTRY">Ingresar lote</Link>
+              </Button>
+            ) : null}
+          </div>
+        }
+      />
       <LotFilters
         values={{ ...params, sort: query.sort, dir: query.dir }}
         productName={product?.commercialName}

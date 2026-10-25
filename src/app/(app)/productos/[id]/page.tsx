@@ -35,7 +35,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const archived = product.status === "ARCHIVED";
   const canReadStock = hasPermission(user, "inventory.read");
   const stock = canReadStock ? await getInventoryModule().stockQueries.getProductStock(user, product.id) : null;
-  const { expiryThresholds: thresholds } = await readGeneralSettings(prisma);
+  const { expiryThresholds: thresholds, currency } = await readGeneralSettings(prisma);
   const canRegister = hasPermission(user, "inventory.write") && !archived;
   return (
     <div className="grid gap-4">
@@ -66,7 +66,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
       {stock ? <ProductStockSection stock={stock} productId={product.id} thresholds={thresholds} /> : null}
-      <ProductDetail product={product} />
+      <ProductDetail product={product} currency={currency} />
     </div>
   );
 }

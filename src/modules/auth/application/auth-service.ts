@@ -48,6 +48,14 @@ export interface LoginResult {
   user: { id: string; email: string; name: string };
 }
 
+export interface ChangePasswordInput {
+  userId: string;
+  currentPassword: string;
+  newPassword: string;
+  ip: string;
+  userAgent?: string;
+}
+
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
 export function createAuthService(deps: AuthServiceDeps) {
@@ -188,7 +196,35 @@ export function createAuthService(deps: AuthServiceDeps) {
     });
   }
 
-  return { login, logout, authenticate, requestPasswordReset, resetPassword };
+  /**
+   * Signed-in password change: checks the current password, applies the same policy as a reset, revokes every
+   * session of the user and opens a fresh one (returned) so the person stays signed in on this device only.
+   */
+  async function changePassword(input: ChangePasswordInput): Promise<{ token: string; expiresAt: Date }> {
+    const problems = validatePassword(input.newPassword);
+    if (problems.length > 0) throw new ValidationError("Weak password", { password: problems });
+
+    const user = await users.findById(input.userId);
+    const currentOk = !!user && user.active && (await hasher.verify(user.passwordHash, input.currentPassword));
+    if (!user || !currentOk) {
+      await audit({ actorId: input.userId, action: "auth.password.change_failed", entityType: "user", entityId: input.userId, ip: input.ip });
+      throw new ValidationError("Wrong current password", { currentPassword: ["La contraseña actual no es correcta."] });
+    }
+    if (input.currentPassword === input.newPassword) {
+      throw new ValidationError("Password unchanged", { password: ["La nueva contraseña tiene que ser distinta de la actual."] });
+    }
+
+    const current = now();
+    await users.updatePasswordHash(user.id, await hasher.hash(input.newPassword));
+    await sessions.deleteAllForUser(user.id);
+    const token = generateToken();
+    const expiresAt = slidingExpiry(current, current);
+    await sessions.create({ userId: user.id, tokenHash: hashToken(token), expiresAt, ip: input.ip, userAgent: input.userAgent });
+    await audit({ actorId: user.id, action: "auth.password.changed", entityType: "user", entityId: user.id, ip: input.ip });
+    return { token, expiresAt };
+  }
+
+  return { login, logout, authenticate, requestPasswordReset, resetPassword, changePassword };
 }
 
 export type AuthService = ReturnType<typeof createAuthService>;

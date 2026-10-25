@@ -5,8 +5,10 @@ import { hasPermission } from "@/modules/auth/domain/permissions";
 import { getCurrentUser } from "@/modules/auth/server";
 import { getCatalogModule } from "@/modules/catalog/composition";
 import { ProductForm } from "@/modules/catalog/ui/product-form";
+import { readGeneralSettings } from "@/modules/settings/infrastructure/read-general-settings";
 import { hasErrorCode } from "@/shared/domain/errors";
 import { isUuid } from "@/shared/domain/ids";
+import { prisma } from "@/shared/infrastructure/db/prisma";
 
 export const metadata: Metadata = { title: "Editar producto - Farmacia Cabaleiro" };
 
@@ -23,10 +25,11 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   });
   if (!product || product.status === "ARCHIVED") notFound();
 
-  const [categories, units, suppliers] = await Promise.all([
+  const [categories, units, suppliers, settings] = await Promise.all([
     taxonomyService.list(user, "category"),
     taxonomyService.list(user, "unit"),
     catalogService.listSupplierOptions(user),
+    readGeneralSettings(prisma),
   ]);
   // Keep the product's current category/unit selectable even if they were deactivated since.
   const supplierOptions = suppliers.map((s) => ({ value: s.id, label: s.name }));
@@ -39,6 +42,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
       <h1 className="text-2xl font-semibold">Editar producto</h1>
       <ProductForm
         product={product}
+        currency={settings.currency}
         categories={categories.filter((c) => c.active || c.id === product.categoryId).map((c) => ({ value: c.id, label: c.name }))}
         units={units.filter((u) => u.active || u.id === product.unitId).map((u) => ({ value: u.id, label: u.name }))}
         suppliers={supplierOptions}

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { readGeneralSettings } from "@/modules/settings/infrastructure/read-general-settings";
+import { prisma } from "@/shared/infrastructure/db/prisma";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AccessDenied } from "@/components/access-denied";
@@ -94,10 +96,11 @@ export default async function NewMovementPage({ searchParams }: { searchParams: 
   });
   if (!product) notFound();
 
-  const [stock, allReasons, suppliers] = await Promise.all([
+  const [stock, allReasons, suppliers, settings] = await Promise.all([
     stockQueries.getProductStock(user, product.id),
     stockQueries.listReasons(user),
     stockQueries.listSupplierOptions(user),
+    readGeneralSettings(prisma),
   ]);
   const reasons: Record<ReasonKind, Array<{ id: string; name: string }>> = { ADJUSTMENT: [], WRITE_OFF: [], RETURN: [] };
   for (const reason of allReasons) reasons[reason.kind].push({ id: reason.id, name: reason.name });
@@ -128,6 +131,7 @@ export default async function NewMovementPage({ searchParams }: { searchParams: 
         {archived ? <p className="text-muted-foreground text-sm">El producto está archivado: no se le puede ingresar stock.</p> : null}
       </div>
       <MovementForm
+        currency={settings.currency}
         key={`${product.id}-${startType}`}
         product={{ id: product.id, name: product.commercialName, available: stock.breakdown.available }}
         today={stock.today}

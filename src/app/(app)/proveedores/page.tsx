@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/page-header";
 import Link from "next/link";
 import { AccessDenied } from "@/components/access-denied";
 import { Pagination } from "@/components/pagination";
@@ -31,14 +32,19 @@ export default async function SuppliersPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="grid gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Proveedores</h1>
-        {hasPermission(user, "suppliers.write") ? (
-          <Button asChild>
-            <Link href="/proveedores/nuevo">Nuevo proveedor</Link>
-          </Button>
-        ) : null}
-      </div>
+      <PageHeader
+        title="Proveedores"
+        description="Datos de contacto y estado de cada proveedor."
+        actions={
+          <>
+            {hasPermission(user, "suppliers.write") ? (
+              <Button asChild>
+                <Link href="/proveedores/nuevo">Nuevo proveedor</Link>
+              </Button>
+            ) : null}
+          </>
+        }
+      />
       <SupplierFilters values={{ ...params, sort: query.sort, dir: query.dir }} />
       <SuppliersTable suppliers={items} sort={query.sort} dir={query.dir} params={params} />
       <Pagination basePath="/proveedores" params={{ ...params, sort: query.sort, dir: query.dir }} page={query.page} pageSize={query.pageSize} total={total} />

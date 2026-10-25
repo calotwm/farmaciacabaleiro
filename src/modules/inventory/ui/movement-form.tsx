@@ -42,6 +42,8 @@ interface MovementFormProps {
   allowedTypes: RegistrableMovementType[];
   initialType: RegistrableMovementType;
   initialLotId?: string;
+  /** ISO 4217 code from the settings, shown in the cost label. */
+  currency?: string;
 }
 
 const STATUS_TEXT: Partial<Record<LotStatus, string>> = {
@@ -83,7 +85,7 @@ function previewMessage(error: unknown): string {
  * "Nuevo movimiento": type -> quantity -> (exit) FEFO suggestion -> reason when required -> confirm.
  * The preview runs the same pure FEFO planner the server runs, but the server decides.
  */
-export function MovementForm({ product, today, lots, reasons, suppliers, allowedTypes, initialType, initialLotId }: MovementFormProps) {
+export function MovementForm({ product, today, lots, reasons, suppliers, allowedTypes, initialType, initialLotId, currency = "ARS" }: MovementFormProps) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(registerMovementAction, initialFormState);
   const [type, setType] = useState<RegistrableMovementType>(initialType);
   const [quantity, setQuantity] = useState("");
@@ -174,7 +176,7 @@ export function MovementForm({ product, today, lots, reasons, suppliers, allowed
             required
           />
           <FormField name="quantity" label="Cantidad" value={quantity} onChange={(event) => setQuantity(event.target.value)} errors={errors.quantity} inputMode="numeric" required />
-          <FormField name="unitCost" label="Costo unitario (ARS)" defaultValue={value("unitCost")} errors={errors.unitCost} inputMode="decimal" />
+          <FormField name="unitCost" label={`Costo unitario (${currency})`} defaultValue={value("unitCost")} errors={errors.unitCost} inputMode="decimal" />
           <SelectField name="supplierId" label="Proveedor" options={suppliers} placeholder="Sin proveedor" defaultValue={value("supplierId")} errors={errors.supplierId} />
           <FormField name="invoiceNumber" label="Factura" defaultValue={value("invoiceNumber")} errors={errors.invoiceNumber} />
           <FormField name="location" label="Ubicación" defaultValue={value("location")} errors={errors.location} />

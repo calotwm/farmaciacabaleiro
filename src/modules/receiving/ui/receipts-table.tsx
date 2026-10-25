@@ -7,7 +7,7 @@ import { ReceiptIssuesBadge, ReceiptStatusBadge } from "./receipt-badges";
 /** Presentational: one page of receipts (newest first; drafts on top). */
 export function ReceiptsTable({ receipts, showSupplier = true }: { receipts: ReceiptSummary[]; showSupplier?: boolean }) {
   return (
-    <Table>
+    <Table framed>
       <TableHeader>
         <TableRow>
           <TableHead>Fecha</TableHead>

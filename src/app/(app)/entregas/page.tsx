@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/page-header";
 import Link from "next/link";
 import { AccessDenied } from "@/components/access-denied";
 import { Pagination } from "@/components/pagination";
@@ -73,22 +74,24 @@ export default async function DeliveriesPage({ searchParams }: { searchParams: P
 
   return (
     <div className="grid gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold">Entregas</h1>
-          <p className="text-muted-foreground text-sm">Repartos y visitas de proveedores. Las horas se muestran en hora de Argentina.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline">
-            <Link href="/entregas/cumplimiento">Cumplimiento</Link>
-          </Button>
-          {hasPermission(user, "deliveries.write") ? (
-            <Button asChild>
-              <Link href="/entregas/nueva">Programar</Link>
+      <PageHeader
+        title="Entregas"
+        description="Repartos y visitas de proveedores. Las horas se muestran en hora de Argentina."
+        actions={
+          <>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link href="/entregas/cumplimiento">Cumplimiento</Link>
             </Button>
-          ) : null}
-        </div>
-      </div>
+            {hasPermission(user, "deliveries.write") ? (
+              <Button asChild>
+                <Link href="/entregas/nueva">Programar</Link>
+              </Button>
+            ) : null}
+          </div>
+          </>
+        }
+      />
 
       <nav aria-label="Vista" className="flex gap-2">
         <Link href={toggleLink("list")} className={toggleClass("list")} aria-current={view === "list" ? "page" : undefined}>

@@ -18,8 +18,8 @@ export function ExpirationsTable({
   emptyMessage: string;
 }) {
   return (
-    <div className="bg-card rounded-xl border">
-      <Table>
+    <>
+      <Table framed>
         <TableHeader>
           <TableRow>
             <TableHead>Producto</TableHead>
@@ -66,6 +66,6 @@ export function ExpirationsTable({
           )}
         </TableBody>
       </Table>
-    </div>
+    </>
   );
 }

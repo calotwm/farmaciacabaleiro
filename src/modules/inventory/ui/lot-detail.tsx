@@ -15,7 +15,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 }
 
 /** Presentational: the facts of one lot. */
-export function LotDetail({ lot, today, thresholds }: { lot: LotListItem; today: CalendarDate; thresholds?: readonly number[] }) {
+export function LotDetail({ lot, today, thresholds, currency }: { lot: LotListItem; today: CalendarDate; thresholds?: readonly number[]; currency?: string }) {
   return (
     <Card>
       <CardHeader>
@@ -36,7 +36,7 @@ export function LotDetail({ lot, today, thresholds }: { lot: LotListItem; today:
           <Row label="Recibido">{formatDateTime(lot.receivedAt)}</Row>
           <Row label="Proveedor">{lot.supplierName}</Row>
           <Row label="Factura">{lot.invoiceNumber}</Row>
-          <Row label="Costo unitario">{lot.unitCost ? formatMoney(lot.unitCost) : null}</Row>
+          <Row label="Costo unitario">{lot.unitCost ? formatMoney(lot.unitCost, { currency }) : null}</Row>
           <Row label="Ubicación">{lot.location}</Row>
           <Row label="Notas">{lot.notes}</Row>
         </dl>

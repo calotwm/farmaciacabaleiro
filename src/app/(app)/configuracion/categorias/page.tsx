@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AccessDenied } from "@/components/access-denied";
+import { SettingsSection } from "@/components/settings-section";
 import { hasPermission } from "@/modules/auth/domain/permissions";
 import { getCurrentUser } from "@/modules/auth/server";
 import { getCatalogModule } from "@/modules/catalog/composition";
@@ -14,9 +15,8 @@ export default async function CategoriesPage() {
 
   const categories = await getCatalogModule().taxonomyService.list(user, "category");
   return (
-    <div className="grid gap-4">
-      <h1 className="text-2xl font-semibold">Categorías</h1>
+    <SettingsSection title="Categorías" description="Clasifican los productos del catálogo.">
       <TaxonomyAdmin kind="category" items={categories} />
-    </div>
+    </SettingsSection>
   );
 }

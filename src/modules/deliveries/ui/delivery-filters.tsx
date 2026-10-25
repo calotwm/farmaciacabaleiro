@@ -18,7 +18,7 @@ const STATUS_OPTIONS: SelectOption[] = DELIVERY_STATUSES.map((status) => ({ valu
 /** GET form: every filter lives in the URL. The date range and "late only" apply to the list view. */
 export function DeliveryFilters({ view, values, suppliers }: DeliveryFiltersProps) {
   return (
-    <form method="get" action="/entregas" role="search" aria-label="Filtros de entregas" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <form method="get" action="/entregas" role="search" aria-label="Filtros de entregas" className="bg-card grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-4">
       <input type="hidden" name="view" value={view} />
       {view === "list" ? (
         <>

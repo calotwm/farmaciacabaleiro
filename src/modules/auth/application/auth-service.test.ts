@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { InvalidCredentialsError } from "@/shared/domain/errors";
+import { InvalidCredentialsError, ValidationError } from "@/shared/domain/errors";
 import { createAuthService } from "./auth-service";
 import type { UserRecord, UserRepository } from "./ports";
 
@@ -54,5 +54,50 @@ describe("login identifier lookup", () => {
     await expect(service.login({ identifier: "nobody", password: "x", ip: "ip" })).rejects.toBeInstanceOf(
       InvalidCredentialsError,
     );
+  });
+});
+
+describe("changePassword", () => {
+  function setupChange() {
+    const updatePasswordHash = vi.fn(async () => {});
+    const deleteAllForUser = vi.fn(async () => {});
+    const create = vi.fn(async () => {});
+    const audit = vi.fn(async () => {});
+    const service = createAuthService({
+      users: { findById: vi.fn(async (id: string) => (id === record.id ? record : null)), updatePasswordHash } as unknown as UserRepository,
+      sessions: { deleteAllForUser, create } as never,
+      resetTokens: {} as never,
+      attempts: { countRecentFailures: vi.fn(async () => 0) },
+      hasher: { hash: async (v: string) => `hash:${v}`, verify: async (h: string, v: string) => h === `hash:${v}` },
+      email: { send: vi.fn() },
+      audit,
+      appUrl: "http://localhost",
+    });
+    return { service, updatePasswordHash, deleteAllForUser, create, audit };
+  }
+  const input = { userId: "u1", currentPassword: "secret-pass-123", newPassword: "another-pass-456", ip: "ip" };
+
+  it("stores the new hash, revokes every session and opens a fresh one", async () => {
+    const { service, updatePasswordHash, deleteAllForUser, create, audit } = setupChange();
+    const result = await service.changePassword(input);
+    expect(updatePasswordHash).toHaveBeenCalledWith("u1", "hash:another-pass-456");
+    expect(deleteAllForUser).toHaveBeenCalledWith("u1");
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ userId: "u1" }));
+    expect(result.token).toBeTruthy();
+    expect(audit).toHaveBeenCalledWith(expect.objectContaining({ action: "auth.password.changed", actorId: "u1" }));
+  });
+
+  it("rejects a wrong current password without touching anything", async () => {
+    const { service, updatePasswordHash, deleteAllForUser } = setupChange();
+    await expect(service.changePassword({ ...input, currentPassword: "nope" })).rejects.toMatchObject({ fieldErrors: { currentPassword: expect.any(Array) } });
+    expect(updatePasswordHash).not.toHaveBeenCalled();
+    expect(deleteAllForUser).not.toHaveBeenCalled();
+  });
+
+  it("applies the password policy and refuses an unchanged password", async () => {
+    const { service, updatePasswordHash } = setupChange();
+    await expect(service.changePassword({ ...input, newPassword: "short" })).rejects.toBeInstanceOf(ValidationError);
+    await expect(service.changePassword({ ...input, newPassword: input.currentPassword })).rejects.toBeInstanceOf(ValidationError);
+    expect(updatePasswordHash).not.toHaveBeenCalled();
   });
 });

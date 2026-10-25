@@ -19,7 +19,7 @@ interface SuppliersTableProps {
 export function SuppliersTable({ suppliers, sort, dir, params }: SuppliersTableProps) {
   const head = { sort, dir, basePath: "/proveedores", params };
   return (
-    <Table>
+    <Table framed>
       <TableHeader>
         <TableRow>
           <SortableHead {...head} label="Nombre" field="name" />

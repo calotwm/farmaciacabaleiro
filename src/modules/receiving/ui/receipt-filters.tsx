@@ -16,7 +16,7 @@ const STATUS_OPTIONS: SelectOption[] = [
 /** GET form: every filter lives in the URL. */
 export function ReceiptFilters({ values, suppliers }: ReceiptFiltersProps) {
   return (
-    <form method="get" action="/recepciones" role="search" aria-label="Filtros de recepciones" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <form method="get" action="/recepciones" role="search" aria-label="Filtros de recepciones" className="bg-card grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-4">
       <SelectField name="supplierId" label="Proveedor" options={suppliers} placeholder="Todos" defaultValue={values.supplierId ?? ""} />
       <SelectField name="status" label="Estado" options={STATUS_OPTIONS} placeholder="Todos" defaultValue={values.status ?? ""} />
       <FormField name="from" type="date" label="Desde" defaultValue={values.from ?? ""} />

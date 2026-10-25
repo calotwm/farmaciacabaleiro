@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { AccessDenied } from "@/components/access-denied";
+import { SettingsSection } from "@/components/settings-section";
 import { getAuthModule } from "@/modules/auth/composition";
 import { hasPermission } from "@/modules/auth/domain/permissions";
 import { getCurrentUser } from "@/modules/auth/server";
@@ -10,27 +12,14 @@ export const metadata: Metadata = { title: "Usuarios - Farmacia Cabaleiro" };
 export default async function UsersPage() {
   const user = await getCurrentUser();
   // Server-side guard: the page and every action behind it require users.manage.
-  if (!user || !hasPermission(user, "users.manage")) {
-    return (
-      <div className="grid max-w-3xl gap-2">
-        <h1 className="text-2xl font-semibold">Acceso denegado</h1>
-        <p role="alert" className="text-muted-foreground">
-          No tenés permiso para administrar usuarios.
-        </p>
-      </div>
-    );
-  }
+  if (!user || !hasPermission(user, "users.manage")) return <AccessDenied message="No tenés permiso para administrar usuarios." />;
 
   const { userAdminService } = getAuthModule();
   const [users, roles] = await Promise.all([userAdminService.listUsers(user), userAdminService.listRoleNames(user)]);
 
   return (
-    <div className="grid gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Usuarios</h1>
-        <CreateUserDialog roles={roles} />
-      </div>
+    <SettingsSection title="Usuarios y roles" description="Quién puede entrar al sistema y qué puede hacer." actions={<CreateUserDialog roles={roles} />}>
       <UsersTable users={users} roles={roles} currentUserId={user.id} />
-    </div>
+    </SettingsSection>
   );
 }

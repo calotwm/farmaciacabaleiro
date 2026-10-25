@@ -3,11 +3,12 @@
 import * as React from "react"
 import { cn } from "@/shared/lib/utils"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+/** `framed` draws the thin card border around the table (list pages); leave it off inside panels that already have one. */
+function Table({ className, framed = false, ...props }: React.ComponentProps<"table"> & { framed?: boolean }) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className={cn("relative w-full overflow-x-auto", framed && "rounded-xl border bg-card")}
     >
       <table
         data-slot="table"
