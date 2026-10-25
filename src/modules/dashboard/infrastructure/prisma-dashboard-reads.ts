@@ -1,7 +1,8 @@
 import { Prisma } from "@/generated/prisma/client";
-import { type CalendarDate, addDays, startOfDayInTz, toDbDate } from "@/shared/domain/dates";
+import { type CalendarDate, addDays, fromDbDate, startOfDayInTz, toDbDate } from "@/shared/domain/dates";
 import { productStockLevels } from "@/shared/infrastructure/db/stock-level-sql";
 import type { DbClient } from "@/shared/infrastructure/db/types";
+import type { ExpiringLotRow } from "../domain/expiring-lots";
 import type { DeliveryKpis, StockKpis } from "../domain/kpi-cards";
 
 const OPEN = ["SCHEDULED", "CONFIRMED"] as const;
@@ -47,6 +48,34 @@ export class PrismaDashboardReads {
       count({ status: "SCHEDULED", scheduledAt: { gte: dayStart } }),
     ]);
     return { today: todayCount, next7Days, late, pendingConfirmation };
+  }
+
+  /** Lots with stock that are expired or expire within `horizonDays`, soonest first (expired lots lead). */
+  async expiringLots(today: CalendarDate, horizonDays: number, take: number) {
+    const where = { currentQuantity: { gt: 0 }, expiryDate: { lte: toDbDate(addDays(today, horizonDays)) } };
+    const [total, lots] = await Promise.all([
+      this.db.lot.count({ where }),
+      this.db.lot.findMany({
+        where,
+        orderBy: [{ expiryDate: "asc" }, { id: "asc" }],
+        take,
+        select: {
+          id: true,
+          lotNumber: true,
+          expiryDate: true,
+          currentQuantity: true,
+          product: { select: { id: true, commercialName: true } },
+        },
+      }),
+    ]);
+    const rows: ExpiringLotRow[] = lots.map((lot) => ({
+      id: lot.id,
+      lotNumber: lot.lotNumber,
+      expiryDate: fromDbDate(lot.expiryDate),
+      quantity: lot.currentQuantity,
+      product: lot.product,
+    }));
+    return { total, rows };
   }
 
   latestMovements(take: number) {
