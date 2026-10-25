@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { initialFormState } from "./form-state";
+import { initialFormState } from "@/shared/application/form-state";
 import { roleLabel } from "./role-label";
 import { createUserAction } from "./user-actions";
 

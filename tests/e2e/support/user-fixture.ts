@@ -18,7 +18,17 @@ async function remove(id: string, email: string) {
   await prisma.auditLog.deleteMany({
     where: { OR: [{ actorId: id }, { entityId: id }, { after: { path: ["email"], equals: email } }] },
   });
-  await prisma.user.deleteMany({ where: { email } }); // sessions cascade
+  // Rows the specs create through the UI are named "E2E ...". Products that ever had a stock
+  // movement cannot be deleted (append-only history), so those are left in place.
+  await prisma.product.deleteMany({ where: { commercialName: { startsWith: "E2E " }, stockMovements: { none: {} } } });
+  await prisma.category.deleteMany({ where: { name: { startsWith: "E2E " }, products: { none: {} } } });
+  try {
+    await prisma.user.deleteMany({ where: { email } }); // sessions cascade
+  } catch {
+    // The user authored stock movements (kept forever): retire the account instead of deleting it.
+    await prisma.session.deleteMany({ where: { userId: id } });
+    await prisma.user.updateMany({ where: { email }, data: { active: false } });
+  }
 }
 
 async function main() {

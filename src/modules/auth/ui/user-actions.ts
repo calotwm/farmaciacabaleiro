@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getAuthModule } from "../composition";
 import { getClientIp, requirePermission } from "../server";
-import { type FormState, errorToFormState, parseForm } from "./form-state";
+import { type FormState, errorToFormState, parseForm } from "@/shared/application/form-state";
 import { changeRoleSchema, createUserSchema, setActiveSchema } from "./schemas";
 
 const USERS_PATH = "/configuracion/usuarios";

@@ -10,7 +10,7 @@ import {
   getUserAgent,
   setSessionCookie,
 } from "../server";
-import { type FormState, errorToFormState, parseForm } from "./form-state";
+import { type FormState, errorToFormState, parseForm } from "@/shared/application/form-state";
 import { loginSchema, requestResetSchema, resetPasswordSchema } from "./schemas";
 
 /** Only same-site relative paths are valid post-login targets (no open redirects). */

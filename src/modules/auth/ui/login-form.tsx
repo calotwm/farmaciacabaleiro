@@ -6,7 +6,7 @@ import { FormBanner } from "@/components/form-banner";
 import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
 import { loginAction } from "./auth-actions";
-import { initialFormState } from "./form-state";
+import { initialFormState } from "@/shared/application/form-state";
 
 export function LoginForm({ next, justReset }: { next?: string; justReset?: boolean }) {
   const [state, formAction, pending] = useActionState(loginAction, initialFormState);

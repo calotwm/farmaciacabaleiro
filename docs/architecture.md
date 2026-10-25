@@ -150,7 +150,29 @@ Module `src/modules/auth` (hexagonal: `domain` policies, `application` services 
 - **Audit actions**: `auth.login.success|failed|blocked`, `auth.logout`, `auth.password_reset.requested|completed`,
   `user.create`, `user.role.change`, `user.activate`, `user.deactivate`.
 
-## 8. Accepted assumptions
+## 8. Catalog
+
+Module `src/modules/catalog` (products, categories, units). Pages: `/productos` (list, detail, new, edit),
+`/configuracion/categorias`, `/configuracion/unidades`.
+
+- **Permissions**: `products.read` (list/view), `products.write` (create/edit), `products.archive`,
+  `catalog.manage` (categories and units). Pages show "Acceso denegado" and every use case calls `assertPermission`.
+- **Product code**: `code` is the unique internal code. When the form leaves it empty a `P-XXXXXXXX` code is generated
+  (retried on collision). Barcode and SKU are optional and unique; duplicates fail with a field-level Spanish message
+  (`ConflictError.fieldErrors`).
+- **Pharmacological fields are optional**: a non-medication product only needs name, category and unit.
+- **Archive**: `ARCHIVED` products are hidden from lists unless the status filter asks for them and cannot be edited
+  until unarchived. Inactive categories/units cannot be newly assigned but keep working for products that already use them.
+- **Categories and units**: create, rename (case-insensitive unique), activate/deactivate, delete only when no product uses
+  them (a DB foreign key is the last line of defence). Migration `unit_active` added `units.active` (categories already had it).
+- **Tables**: search, filters, sort and pagination are server-side and live in the URL (`src/shared/application/list-query.ts`,
+  `Pagination`, `SortableHead`). Filter forms are plain GET forms and work without JavaScript.
+- **Barcode input** (`src/components/barcode-input.tsx`): USB keyboard-wedge scanners type fast and end with Enter. With
+  `onScan` the Enter does not submit the form (product form: moves focus on); without it, Enter submits the surrounding form
+  with the cleaned code (`normalizeBarcode`). In the product list a barcode that matches a product opens it directly.
+- Suppliers do not exist as a module yet: products reference them through a read-only `SupplierLookup` port.
+
+## 9. Accepted assumptions
 
 1. A lot expires at the end of the stated day; `MM/AAAA` means the last day of the month.
 2. Expired lots only allow write-off/return with a reason.
@@ -159,7 +181,7 @@ Module `src/modules/auth` (hexagonal: `domain` policies, `application` services 
 5. Single tenant, no POS integration.
 6. Zero budget: anything paid is replaced by a free alternative or skipped and documented.
 
-## 9. Decisions (ADR-style)
+## 10. Decisions (ADR-style)
 
 | # | Decision | Why |
 | --- | --- | --- |
@@ -174,3 +196,5 @@ Module `src/modules/auth` (hexagonal: `domain` policies, `application` services 
 | 9 | Prisma 7 with the `pg` adapter | Current Prisma architecture; one driver for app and tests |
 | 10 | Login rate limit counted from the audit log | No extra table; failures are audited anyway |
 | 11 | Railway proxy cert is self-signed | Dev-only `DATABASE_SSL_REJECT_UNAUTHORIZED=false`; production uses private network or verified TLS |
+| 12 | `isDomainError` / `hasErrorCode` instead of `instanceof` at module edges | Next.js can bundle `errors.ts` once per layer (RSC, server actions); class identity then differs and `instanceof` silently fails |
+| 13 | Form state echoes submitted values (never password/token fields) | React 19 resets uncontrolled forms after an action; users must not lose what they typed on a validation error |
