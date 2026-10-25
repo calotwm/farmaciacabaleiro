@@ -47,16 +47,17 @@ Everything in the spec, delivered in 5 stages. UI in Spanish (es-AR), DD/MM/YYYY
 - [x] T2.4 Physical counts and reconciliation
 
 ### Stage 3 — Suppliers, calendar, receiving
-- [ ] T3.1 Suppliers CRUD + supplied products
-- [ ] T3.2 Scheduled deliveries: calendar + list, reschedule, compliance history
-- [ ] T3.3 Receiving flow: from delivery or unscheduled, partial, discrepancies, idempotent atomic confirmation
+- [x] T3.1 Suppliers CRUD + supplied products
+- [x] T3.2 Scheduled deliveries: calendar + list, reschedule, compliance history
+- [x] T3.3 Receiving flow: from delivery or unscheduled, partial, discrepancies, idempotent atomic confirmation
 
 ### Scope cut (2026-10-25, user): single user, keep only what matters, minimize tokens
-Rationale: the app is used by one person; the original spec over-engineered it. Already-built auth/RBAC stays as is (no further role work). Dropped: Web Push, separate worker process, notification preferences, charts, Excel export, Docker Compose, extra e2e tests. Tests: focused unit/integration for business rules only.
+Rationale: the app is used by one person; the original spec over-engineered it. Already-built auth/RBAC stays as is (no further role work). Web Push kept (user: "las notificaciones push son importantes"). Dropped: separate worker process, notification preferences, charts, Excel export, Docker Compose, extra e2e tests. Tests: focused unit/integration for business rules only.
 
 ### Stage 4 — Lean finish
 - [ ] T4.1 Dashboard: KPI cards (low stock, out of stock, expiring by threshold, expired with stock, today/next 7 days deliveries, late deliveries) linking to filtered lists + latest movements
-- [ ] T4.2 Alerts: idempotent daily check run on demand (on dashboard load, at most once per AR day) for expiry thresholds, expired with stock and late/upcoming deliveries; in-app bell with unread count, mark as read, links. Settings page for expiry thresholds and pharmacy name.
+- [ ] T4.2 Alerts: idempotent daily check for expiry thresholds, expired with stock and late/upcoming deliveries, exposed as `POST /api/cron/daily` protected by `CRON_SECRET`, triggered by a free GitHub Actions schedule (also runs on dashboard load as fallback, at most once per AR day); in-app bell with unread count, mark as read, links. Settings page for expiry thresholds and pharmacy name.
+- [ ] T4.2b Web Push: VAPID keys (free), service worker, explicit "Activar notificaciones" button, multiple devices, subscriptions persisted, 404/410 subscriptions disabled, push sent from the outbox after alerts are created (never inside business transactions), click opens the lot/delivery page.
 - [ ] T4.3 CSV export: inventory, expiring lots, movements
 - [ ] T4.4 Free deployment + short README (install, admin bootstrap, backup with pg_dump)
 
@@ -73,6 +74,7 @@ Spec sections 1–15; no feature counted done if only its UI exists.
 
 - 2026-10-25: T2.2–T2.4 done (one delegated writer, three stacked commits). Migrations: units.active; COUNT_CORRECTION_IN/OUT. Decisions: product code auto-generated when empty; stock buckets mutually exclusive (expired > quarantine/blocked > blockedQuantity); per-product row lock (FOR NO KEY UPDATE) serializes stock ops; expired lots accept only WRITE_OFF/RETURN/count corrections; write-off/return need inventory.writeoff (admin only by seed); low-stock alerts after commit, log-and-swallow, skipDuplicates; count reconciliation uses counted − current quantity; isDomainError helper because Next bundles errors.ts twice. Evidence after T2.4: lint, typecheck, build pass; test 176/176; integration 50/50 (parent re-ran 50/50); e2e 12/12.
 - Decision: the Railway dev DB accumulates TEST-/E2E- rows (append-only movements can't be deleted). Production must use a separate, clean database.
+- 2026-10-25: T3.1–T3.3 done (delegated). d40bdb6 suppliers (CUIT check digit), dd2c83e deliveries (COMPLETED status for visits, reschedule chain, calendar, compliance), 8134ed3 receiving (idempotent atomic confirm, damaged not stocked, partial receipts, post-commit alerts). Evidence: lint, typecheck pass; test 261; integration 90/90; build pass. Known gap: receiving e2e spec failed at the "Borrador guardado." toast and was dropped with the scope cut; code path looks correct (toast on state.success), unverified by hand.
 
 ## Next step
 Finish T3.3 (lean), then T4.1.
