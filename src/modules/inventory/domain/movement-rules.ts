@@ -3,7 +3,7 @@ import { ValidationError } from "@/shared/domain/errors";
 import { ExpiredLotError, InsufficientStockError, LotNotUsableError } from "./errors";
 import { allocateFefo, toFefoCandidates } from "./fefo";
 import { type LotState, type LotStatus, effectiveLotStatus, isExpired, usableQuantity } from "./lot";
-import { type MovementType, allowedOnExpiredLot } from "./movement-type";
+import { type CountCorrectionType, type MovementType, allowedOnExpiredLot } from "./movement-type";
 
 /**
  * Pure planning of stock operations: given the current state of the lots, decide the new
@@ -33,6 +33,8 @@ export interface MovementPlan {
   updates: PlannedLotUpdate[];
   movements: PlannedMovement[];
 }
+
+export type { CountCorrectionType };
 
 export type BlockMode = "UNITS" | "QUARANTINE" | "BLOCKED";
 export type UnblockMode = "UNITS" | "LOT";
@@ -119,7 +121,7 @@ function planExitFrom(takes: Array<{ lot: LotState; quantity: number }>): Moveme
  */
 export function planRemoval(
   lot: LotState,
-  type: "ADJUSTMENT_OUT" | "WRITE_OFF" | "RETURN",
+  type: "ADJUSTMENT_OUT" | "WRITE_OFF" | "RETURN" | "COUNT_CORRECTION_OUT",
   quantity: number,
   today: CalendarDate,
 ): MovementPlan {
@@ -140,8 +142,13 @@ export function planRemoval(
   };
 }
 
-/** Adds units to an existing lot (an entry into a known lot, or a positive adjustment). */
-export function planAddition(lot: LotState, type: "ENTRY" | "ADJUSTMENT_IN", quantity: number, today: CalendarDate): MovementPlan {
+/** Adds units to an existing lot (an entry into a known lot, a positive adjustment or a count correction). */
+export function planAddition(
+  lot: LotState,
+  type: "ENTRY" | "ADJUSTMENT_IN" | "COUNT_CORRECTION_IN",
+  quantity: number,
+  today: CalendarDate,
+): MovementPlan {
   assertValidQuantity(quantity);
   assertAllowedOnLot(type, lot, today);
   const currentQuantity = lot.currentQuantity + quantity;

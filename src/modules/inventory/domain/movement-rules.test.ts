@@ -12,7 +12,7 @@ import {
   planUnblock,
   statusAfter,
 } from "./movement-rules";
-import { allowedOnExpiredLot, requiresReason, reasonKindFor, stockDirection } from "./movement-type";
+import { HISTORY_MOVEMENT_TYPES, allowedOnExpiredLot, reasonKindFor, requiresReason, stockDirection } from "./movement-type";
 
 const TODAY = "2026-10-25";
 const expired = (overrides = {}) => makeLot({ id: "old", expiryDate: "2026-10-24", currentQuantity: 6, ...overrides });
@@ -207,9 +207,7 @@ describe("movement type metadata", () => {
   });
 
   it("only write-off, return and count corrections are allowed on expired lots", () => {
-    const allowed = (["ENTRY", "EXIT", "ADJUSTMENT_IN", "ADJUSTMENT_OUT", "RETURN", "WRITE_OFF", "BLOCK", "UNBLOCK", "COUNT_CORRECTION"] as const).filter(
-      allowedOnExpiredLot,
-    );
-    expect(allowed).toEqual(["RETURN", "WRITE_OFF", "COUNT_CORRECTION"]);
+    const allowed = HISTORY_MOVEMENT_TYPES.filter(allowedOnExpiredLot);
+    expect(allowed).toEqual(["RETURN", "WRITE_OFF", "COUNT_CORRECTION_IN", "COUNT_CORRECTION_OUT", "COUNT_CORRECTION"]);
   });
 });

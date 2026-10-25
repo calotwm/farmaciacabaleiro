@@ -41,3 +41,10 @@ ADMIN_EMAIL=you@example.com ADMIN_NAME="Your Name" pnpm admin:create
 
 The script refuses to run if a user with that email already exists and never prints secrets.
 Password reset links are logged to the server console unless SMTP is configured (`SMTP_*` in `.env`).
+
+## Tests and the shared dev database
+
+`stock_movements` is append-only (a Postgres trigger rejects UPDATE/DELETE), so anything that ever had a movement can never be
+deleted. Integration tests therefore run in a transaction that is rolled back; only the concurrency tests commit, using
+`TEST-<uuid>` products and a permanent inactive test user (see `docs/architecture.md` section 9). E2E specs create products named
+`E2E ...`; those with movements remain in the dev database and the throwaway E2E admin is deactivated instead of deleted.

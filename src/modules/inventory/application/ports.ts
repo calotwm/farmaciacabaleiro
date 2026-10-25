@@ -35,6 +35,9 @@ export interface NewMovementData {
   reasonText: string | null;
   userId: string;
   occurredAt: Date;
+  /** What produced the movement (e.g. "stock_count" + the count id). */
+  referenceType?: string | null;
+  referenceId?: string | null;
 }
 
 export interface MovementRef {
@@ -50,6 +53,29 @@ export interface ReasonRecord {
   name: string;
   kind: ReasonKind;
   active: boolean;
+}
+
+export interface CountRecord {
+  id: string;
+  status: "OPEN" | "CLOSED";
+  createdById: string;
+  notes: string | null;
+  closedAt: Date | null;
+}
+
+export interface CountLineRecord {
+  id: string;
+  lotId: string;
+  productId: string;
+  expectedQuantity: number;
+  countedQuantity: number | null;
+  difference: number | null;
+  reconciled: boolean;
+}
+
+export interface CountScope {
+  categoryId?: string;
+  location?: string;
 }
 
 /** Operations available inside one stock transaction. */
@@ -68,6 +94,17 @@ export interface StockTx {
   updateLots(updates: readonly PlannedLotUpdate[]): Promise<void>;
   addMovements(movements: readonly NewMovementData[]): Promise<MovementRef[]>;
   findReason(id: string): Promise<ReasonRecord | null>;
+
+  // Physical counts
+  /** Locks the count row (`FOR UPDATE`): serializes saving lines against closing, and a second close against the first. */
+  lockCount(countId: string): Promise<CountRecord | null>;
+  /** Lots with units on hand that match the scope (a snapshot candidate list), plus the category name when filtered. */
+  listLotsForCount(scope: CountScope): Promise<{ lots: LotState[]; categoryName: string | null }>;
+  createCount(data: { createdById: string; notes: string | null }, lines: ReadonlyArray<{ lot: LotState }>): Promise<CountRecord>;
+  listCountLines(countId: string): Promise<CountLineRecord[]>;
+  setCountedQuantity(lineId: string, countedQuantity: number | null, difference: number | null): Promise<void>;
+  reconcileCountLine(lineId: string, difference: number): Promise<void>;
+  closeCount(countId: string, closedAt: Date): Promise<void>;
 }
 
 export interface StockUnitOfWork {
@@ -157,7 +194,45 @@ export interface Page<T> {
   total: number;
 }
 
+export interface CountListItem {
+  id: string;
+  status: "OPEN" | "CLOSED";
+  createdByName: string;
+  notes: string | null;
+  createdAt: Date;
+  closedAt: Date | null;
+  totalLines: number;
+  countedLines: number;
+}
+
+export interface CountLineView {
+  id: string;
+  lotId: string;
+  lotNumber: string;
+  expiryDate: CalendarDate;
+  lotStatus: LotStatus;
+  productId: string;
+  productName: string;
+  productCode: string;
+  barcode: string | null;
+  sku: string | null;
+  location: string | null;
+  expectedQuantity: number;
+  countedQuantity: number | null;
+  /** Stored difference: counted - expected while open, counted - lot quantity at reconciliation once closed. */
+  difference: number | null;
+  reconciled: boolean;
+  /** What the lot holds right now (it can differ from the snapshot if movements happened meanwhile). */
+  currentQuantity: number;
+}
+
+export interface CountDetail extends CountListItem {
+  lines: CountLineView[];
+}
+
 export interface StockReadRepository {
+  listCounts(page: number, pageSize: number): Promise<Page<CountListItem>>;
+  getCount(id: string): Promise<CountDetail | null>;
   listLots(query: LotListQuery): Promise<Page<LotListItem>>;
   getLot(id: string): Promise<LotListItem | null>;
   /** Every lot of a product (including depleted/expired), for the stock breakdown and FEFO table. */

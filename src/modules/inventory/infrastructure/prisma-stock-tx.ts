@@ -4,6 +4,9 @@ import type { DbClient, TransactionRunner } from "@/shared/infrastructure/db/typ
 import type { LotState } from "../domain/lot";
 import type { PlannedLotUpdate } from "../domain/movement-rules";
 import type {
+  CountLineRecord,
+  CountRecord,
+  CountScope,
   LockedProduct,
   MovementRef,
   NewLotData,
@@ -98,6 +101,72 @@ class PrismaStockTx implements StockTx {
   async findReason(id: string): Promise<ReasonRecord | null> {
     const row = await this.tx.adjustmentReason.findUnique({ where: { id } });
     return row ? { id: row.id, name: row.name, kind: row.kind, active: row.active } : null;
+  }
+
+  async lockCount(countId: string): Promise<CountRecord | null> {
+    const rows = await this.tx.$queryRaw<
+      Array<{ id: string; status: CountRecord["status"]; created_by_id: string; notes: string | null; closed_at: Date | null }>
+    >`
+      SELECT id::text AS id, status::text AS status, created_by_id::text AS created_by_id, notes, closed_at
+      FROM stock_counts
+      WHERE id = ${countId}::uuid
+      FOR UPDATE`;
+    const row = rows[0];
+    return row ? { id: row.id, status: row.status, createdById: row.created_by_id, notes: row.notes, closedAt: row.closed_at } : null;
+  }
+
+  async listLotsForCount(scope: CountScope) {
+    const location = scope.location ? { contains: scope.location, mode: "insensitive" as const } : null;
+    const [rows, category] = await Promise.all([
+      this.tx.lot.findMany({
+        where: {
+          currentQuantity: { gt: 0 },
+          ...(scope.categoryId ? { product: { categoryId: scope.categoryId } } : {}),
+          ...(location ? { OR: [{ location }, { location: null, product: { location } }] } : {}),
+        },
+        orderBy: [{ product: { commercialName: "asc" } }, { expiryDate: "asc" }, { lotNumber: "asc" }],
+      }),
+      scope.categoryId ? this.tx.category.findUnique({ where: { id: scope.categoryId } }) : null,
+    ]);
+    return { lots: rows.map(toLotState), categoryName: category?.name ?? null };
+  }
+
+  async createCount(data: { createdById: string; notes: string | null }, lines: ReadonlyArray<{ lot: LotState }>): Promise<CountRecord> {
+    const count = await this.tx.stockCount.create({ data });
+    await this.tx.stockCountLine.createMany({
+      data: lines.map(({ lot }) => ({
+        stockCountId: count.id,
+        lotId: lot.id,
+        productId: lot.productId,
+        expectedQuantity: lot.currentQuantity,
+      })),
+    });
+    return { id: count.id, status: count.status, createdById: count.createdById, notes: count.notes, closedAt: count.closedAt };
+  }
+
+  async listCountLines(countId: string): Promise<CountLineRecord[]> {
+    const rows = await this.tx.stockCountLine.findMany({ where: { stockCountId: countId } });
+    return rows.map((row) => ({
+      id: row.id,
+      lotId: row.lotId,
+      productId: row.productId,
+      expectedQuantity: row.expectedQuantity,
+      countedQuantity: row.countedQuantity,
+      difference: row.difference,
+      reconciled: row.reconciled,
+    }));
+  }
+
+  async setCountedQuantity(lineId: string, countedQuantity: number | null, difference: number | null) {
+    await this.tx.stockCountLine.update({ where: { id: lineId }, data: { countedQuantity, difference } });
+  }
+
+  async reconcileCountLine(lineId: string, difference: number) {
+    await this.tx.stockCountLine.update({ where: { id: lineId }, data: { difference, reconciled: true } });
+  }
+
+  async closeCount(countId: string, closedAt: Date) {
+    await this.tx.stockCount.update({ where: { id: countId }, data: { status: "CLOSED", closedAt } });
   }
 }
 

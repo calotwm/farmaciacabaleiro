@@ -3,7 +3,7 @@ import { BarcodeInput } from "@/components/barcode-input";
 import { FormField } from "@/components/form-field";
 import { SelectField, type SelectOption } from "@/components/select-field";
 import { Button } from "@/components/ui/button";
-import { MOVEMENT_TYPE_LABELS, type MovementType } from "../domain/movement-type";
+import { HISTORY_MOVEMENT_TYPES, MOVEMENT_TYPE_LABELS } from "../domain/movement-type";
 
 interface MovementFiltersProps {
   values: { search?: string; type?: string; productId?: string; lotId?: string; userId?: string; from?: string; to?: string };
@@ -12,7 +12,7 @@ interface MovementFiltersProps {
   lotNumber?: string;
 }
 
-const TYPE_OPTIONS: SelectOption[] = (Object.keys(MOVEMENT_TYPE_LABELS) as MovementType[]).map((type) => ({
+const TYPE_OPTIONS: SelectOption[] = HISTORY_MOVEMENT_TYPES.filter((type) => type !== "COUNT_CORRECTION").map((type) => ({
   value: type,
   label: MOVEMENT_TYPE_LABELS[type],
 }));

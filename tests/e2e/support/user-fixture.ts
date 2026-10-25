@@ -22,6 +22,7 @@ async function remove(id: string, email: string) {
   // movement cannot be deleted (append-only history), so those are left in place.
   await prisma.product.deleteMany({ where: { commercialName: { startsWith: "E2E " }, stockMovements: { none: {} } } });
   await prisma.category.deleteMany({ where: { name: { startsWith: "E2E " }, products: { none: {} } } });
+  await prisma.stockCount.deleteMany({ where: { createdById: id } }); // lines cascade
   try {
     await prisma.user.deleteMany({ where: { email } }); // sessions cascade
   } catch {

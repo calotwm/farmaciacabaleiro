@@ -71,7 +71,19 @@ export function createStockQueries({ reads, now = () => new Date() }: StockQueri
     return reads.listSupplierOptions();
   }
 
-  return { listLots, getLot, getProductStock, listMovements, listReasons, listMovementUsers, listSupplierOptions };
+  async function listCounts(actor: AuthUser, page: number, pageSize: number) {
+    assertPermission(actor, "inventory.count");
+    return reads.listCounts(page, pageSize);
+  }
+
+  async function getCount(actor: AuthUser, id: string) {
+    assertPermission(actor, "inventory.count");
+    const count = await reads.getCount(id);
+    if (!count) throw new NotFoundError("stock count");
+    return { today: today(), count };
+  }
+
+  return { listLots, getLot, getProductStock, listMovements, listReasons, listMovementUsers, listSupplierOptions, listCounts, getCount };
 }
 
 export type StockQueries = ReturnType<typeof createStockQueries>;
