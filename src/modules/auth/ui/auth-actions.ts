@@ -7,11 +7,12 @@ import {
   getClientIp,
   getCurrentUser,
   getSessionToken,
+  requireUser,
   getUserAgent,
   setSessionCookie,
 } from "../server";
 import { type FormState, errorToFormState, parseForm } from "@/shared/application/form-state";
-import { loginSchema, requestResetSchema, resetPasswordSchema } from "./schemas";
+import { changePasswordSchema, loginSchema, requestResetSchema, resetPasswordSchema } from "./schemas";
 
 /** Only same-site relative paths are valid post-login targets (no open redirects). */
 function safeNext(next: string | undefined): string {
@@ -69,4 +70,24 @@ export async function resetPasswordAction(_prev: FormState, formData: FormData):
     return errorToFormState(error);
   }
   redirect("/login?reset=1");
+}
+
+/** Own password change from Configuración > Cuenta: other sessions are revoked, this device gets a fresh one. */
+export async function changePasswordAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const parsed = parseForm(changePasswordSchema, formData);
+  if ("state" in parsed) return parsed.state;
+  try {
+    const user = await requireUser();
+    const session = await getAuthModule().authService.changePassword({
+      userId: user.id,
+      currentPassword: parsed.data.currentPassword,
+      newPassword: parsed.data.password,
+      ip: await getClientIp(),
+      userAgent: await getUserAgent(),
+    });
+    await setSessionCookie(session.token);
+  } catch (error) {
+    return errorToFormState(error);
+  }
+  return { success: "Contraseña actualizada. Se cerró la sesión en tus otros dispositivos." };
 }
