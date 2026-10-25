@@ -10,7 +10,8 @@ export default defineConfig({
     environment: "node",
     include: ["src/**/*.integration.test.ts", "tests/integration/**/*.test.ts"],
     setupFiles: ["./tests/integration/setup.ts"],
-    testTimeout: 30_000,
+    testTimeout: 60_000,
+    hookTimeout: 60_000, // the shared dev database is remote: setup does many round trips
     fileParallelism: false,
   },
 });
