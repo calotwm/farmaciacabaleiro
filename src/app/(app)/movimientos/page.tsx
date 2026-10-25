@@ -10,7 +10,7 @@ import { getInventoryModule } from "@/modules/inventory/composition";
 import { HISTORY_MOVEMENT_TYPES, type MovementType } from "@/modules/inventory/domain/movement-type";
 import { MovementFilters } from "@/modules/inventory/ui/movement-filters";
 import { MovementsTable } from "@/modules/inventory/ui/movements-table";
-import { DEFAULT_PAGE_SIZE, firstParam, parsePage, type SearchParams, uuidParam } from "@/shared/application/list-query";
+import { DEFAULT_PAGE_SIZE, buildHref, firstParam, parsePage, type SearchParams, uuidParam } from "@/shared/application/list-query";
 import { isValidCalendarDate } from "@/shared/domain/dates";
 
 export const metadata: Metadata = { title: "Movimientos - Farmacia Cabaleiro" };
@@ -67,11 +67,16 @@ export default async function MovementsPage({ searchParams }: { searchParams: Pr
           <h1 className="text-2xl font-semibold">Movimientos</h1>
           <p className="text-muted-foreground text-sm">Historial inmutable: los errores se corrigen con un movimiento compensatorio.</p>
         </div>
-        {canRegister ? (
-          <Button asChild>
-            <Link href="/movimientos/nuevo">Nuevo movimiento</Link>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <a href={buildHref("/api/export/movimientos", params)}>Exportar CSV</a>
           </Button>
-        ) : null}
+          {canRegister ? (
+            <Button asChild>
+              <Link href="/movimientos/nuevo">Nuevo movimiento</Link>
+            </Button>
+          ) : null}
+        </div>
       </div>
       <MovementFilters
         values={params}

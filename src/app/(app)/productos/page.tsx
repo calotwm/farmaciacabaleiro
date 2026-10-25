@@ -12,6 +12,7 @@ import { ProductFilters } from "@/modules/catalog/ui/product-filters";
 import { ProductsTable } from "@/modules/catalog/ui/products-table";
 import {
   DEFAULT_PAGE_SIZE,
+  buildHref,
   firstParam,
   parseOption,
   parsePage,
@@ -60,11 +61,18 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold">Productos</h1>
-        {hasPermission(user, "products.write") ? (
-          <Button asChild>
-            <Link href="/productos/nuevo">Nuevo producto</Link>
-          </Button>
-        ) : null}
+        <div className="flex flex-wrap gap-2">
+          {hasPermission(user, "inventory.read") ? (
+            <Button asChild variant="outline">
+              <a href={buildHref("/api/export/inventario", { ...params, sort: query.sort, dir: query.dir })}>Exportar CSV</a>
+            </Button>
+          ) : null}
+          {hasPermission(user, "products.write") ? (
+            <Button asChild>
+              <Link href="/productos/nuevo">Nuevo producto</Link>
+            </Button>
+          ) : null}
+        </div>
       </div>
       <ProductFilters
         values={{ ...params, sort: query.sort, dir: query.dir }}
