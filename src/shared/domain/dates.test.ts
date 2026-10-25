@@ -1,16 +1,22 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   addDays,
+  daysInCalendarMonth,
   daysUntil,
   expiryFromMonthYear,
   formatDate,
   formatDateTime,
+  formatTime,
   fromDbDate,
   isValidCalendarDate,
+  isValidTime,
+  isoWeekday,
   parseDisplayDate,
+  splitCalendarDate,
   startOfDayInTz,
   todayInTz,
   toDbDate,
+  zonedInstant,
 } from "./dates";
 
 const originalTz = process.env.TZ;
@@ -130,5 +136,44 @@ describe("expiryFromMonthYear", () => {
     expect(expiryFromMonthYear("00/2026")).toBeNull();
     expect(expiryFromMonthYear("2026-01")).toBeNull();
     expect(expiryFromMonthYear("")).toBeNull();
+  });
+});
+
+describe.each(["UTC", "Asia/Tokyo", "America/Los_Angeles"])("time helpers with server TZ=%s", (serverTz) => {
+  it("zonedInstant builds the AR instant of a local date and time", () => {
+    process.env.TZ = serverTz;
+    expect(zonedInstant("2026-03-09", "23:59").toISOString()).toBe("2026-03-10T02:59:00.000Z");
+    expect(zonedInstant("2026-03-10", "00:00").toISOString()).toBe("2026-03-10T03:00:00.000Z");
+    expect(zonedInstant("2026-07-01", "12:05").toISOString()).toBe("2026-07-01T15:05:00.000Z");
+    expect(() => zonedInstant("2026-03-09", "24:00")).toThrow(RangeError);
+  });
+
+  it("formatTime renders HH:mm in AR time", () => {
+    process.env.TZ = serverTz;
+    expect(formatTime(new Date("2026-03-10T02:59:00Z"))).toBe("23:59");
+    expect(formatTime(new Date("2026-03-10T03:00:00Z"))).toBe("00:00");
+  });
+});
+
+describe("calendar helpers", () => {
+  it("validates 24h times", () => {
+    expect(isValidTime("00:00")).toBe(true);
+    expect(isValidTime("23:59")).toBe(true);
+    expect(isValidTime("24:00")).toBe(false);
+    expect(isValidTime("9:30")).toBe(false);
+    expect(isValidTime("12:60")).toBe(false);
+  });
+
+  it("isoWeekday is 1 for Monday and 7 for Sunday", () => {
+    expect(isoWeekday("2026-10-26")).toBe(1);
+    expect(isoWeekday("2026-10-31")).toBe(6);
+    expect(isoWeekday("2026-11-01")).toBe(7);
+  });
+
+  it("knows the length of a month, including leap years", () => {
+    expect(daysInCalendarMonth(2026, 2)).toBe(28);
+    expect(daysInCalendarMonth(2028, 2)).toBe(29);
+    expect(daysInCalendarMonth(2026, 11)).toBe(30);
+    expect(splitCalendarDate("2026-11-05")).toEqual({ year: 2026, month: 11, day: 5 });
   });
 });

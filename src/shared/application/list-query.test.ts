@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildHref, firstParam, pageCount, pageRange, parseOption, parsePage, parseSortDirection, uuidParam } from "./list-query";
+import { buildHref, dateParam, firstParam, pageCount, pageRange, parseOption, parsePage, parseSortDirection, uuidParam } from "./list-query";
 
 describe("list query helpers", () => {
   it("reads the first non-empty value of a param", () => {
@@ -12,6 +12,13 @@ describe("list query helpers", () => {
     expect(uuidParam("7f6b1d2e-3c4a-4b5d-8e9f-0a1b2c3d4e5f")).toBe("7f6b1d2e-3c4a-4b5d-8e9f-0a1b2c3d4e5f");
     expect(uuidParam("nope")).toBeUndefined();
     expect(uuidParam(undefined)).toBeUndefined();
+  });
+
+  it("keeps only valid calendar dates for date filters", () => {
+    expect(dateParam("2026-11-10")).toBe("2026-11-10");
+    expect(dateParam("2026-02-30")).toBeUndefined();
+    expect(dateParam("10/11/2026")).toBeUndefined();
+    expect(dateParam(undefined)).toBeUndefined();
   });
 
   it("falls back to page 1 for invalid pages", () => {

@@ -113,3 +113,40 @@ export function toDbDate(date: CalendarDate): Date {
   const { year, month, day } = toParts(date);
   return new Date(Date.UTC(year, month - 1, day));
 }
+
+const TIME_OF_DAY = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+/** True for a 24h "HH:mm" time (what `<input type="time">` submits). */
+export function isValidTime(value: string): boolean {
+  return TIME_OF_DAY.test(value);
+}
+
+/** The instant at which `time` ("HH:mm") on a calendar date happens in the given timezone. */
+export function zonedInstant(date: CalendarDate, time: string, timeZone: string = DEFAULT_TIMEZONE): Date {
+  const match = TIME_OF_DAY.exec(time);
+  if (!match) throw new RangeError(`Invalid time: ${time}`);
+  const { year, month, day } = toParts(date);
+  return new Date(new TZDate(year, month - 1, day, Number(match[1]), Number(match[2]), 0, 0, timeZone).getTime());
+}
+
+/** HH:mm for an instant, rendered in the pharmacy timezone. */
+export function formatTime(instant: Date, timeZone: string = DEFAULT_TIMEZONE): string {
+  return format(new TZDate(instant, timeZone), "HH:mm");
+}
+
+/** ISO weekday of a calendar date: 1 = Monday ... 7 = Sunday. */
+export function isoWeekday(date: CalendarDate): number {
+  const { year, month, day } = toParts(date);
+  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return weekday === 0 ? 7 : weekday;
+}
+
+/** Number of days in a month (`month` is 1..12). */
+export function daysInCalendarMonth(year: number, month: number): number {
+  return daysInMonth(year, month);
+}
+
+/** "2026-11-05" -> { year: 2026, month: 11, day: 5 }. Throws for an invalid date. */
+export function splitCalendarDate(date: CalendarDate): { year: number; month: number; day: number } {
+  return toParts(date);
+}

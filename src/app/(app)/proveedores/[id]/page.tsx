@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { hasPermission } from "@/modules/auth/domain/permissions";
 import { getCurrentUser } from "@/modules/auth/server";
+import { getDeliveriesModule } from "@/modules/deliveries/composition";
+import { ComplianceCard } from "@/modules/deliveries/ui/compliance-views";
+import { OpenDeliveriesCard } from "@/modules/deliveries/ui/open-deliveries-card";
 import { getSuppliersModule } from "@/modules/suppliers/composition";
 import { SupplierDetail } from "@/modules/suppliers/ui/supplier-detail";
 import { SupplierProducts } from "@/modules/suppliers/ui/supplier-products";
@@ -44,6 +47,12 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
 
   const products = await supplierService.listProducts(user, supplier.id);
   const canWrite = hasPermission(user, "suppliers.write");
+  const canReadDeliveries = hasPermission(user, "deliveries.read");
+  const now = new Date();
+  const { deliveryService } = getDeliveriesModule();
+  const [openDeliveries, compliance] = canReadDeliveries
+    ? await Promise.all([deliveryService.listOpenForSupplier(user, supplier.id), deliveryService.complianceForSupplier(user, supplier.id)])
+    : [null, null];
 
   return (
     <div className="grid gap-4">
@@ -63,8 +72,10 @@ export default async function SupplierPage({ params }: { params: Promise<{ id: s
       </div>
       <SupplierDetail supplier={supplier} />
       <SupplierProducts supplierId={supplier.id} products={products} canEdit={canWrite} canLinkProducts={hasPermission(user, "products.read")} />
-      <Placeholder title="Próximas entregas" text="Las entregas programadas de este proveedor se mostrarán acá." />
-      <Placeholder title="Cumplimiento" text="El historial de cumplimiento de este proveedor se mostrará acá." />
+      {openDeliveries ? (
+        <OpenDeliveriesCard supplierId={supplier.id} deliveries={openDeliveries} now={now} canSchedule={hasPermission(user, "deliveries.write") && supplier.status === "ACTIVE"} />
+      ) : null}
+      {compliance ? <ComplianceCard summary={compliance} supplierId={supplier.id} /> : null}
       <Placeholder title="Recepciones recientes" text="Las últimas recepciones de mercadería de este proveedor se mostrarán acá." />
     </div>
   );
