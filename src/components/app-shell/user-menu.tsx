@@ -24,18 +24,31 @@ function initials(name: string): string {
   );
 }
 
-export function UserMenu({ name, roleLabel }: { name: string; roleLabel: string }) {
+/** `block` is the sidebar footer (avatar, name and role); the default is the compact avatar for the top bar. */
+export function UserMenu({ name, roleLabel, variant = "compact" }: { name: string; roleLabel: string; variant?: "compact" | "block" }) {
+  const block = variant === "block";
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="gap-2 px-2" aria-label={`Menú de usuario: ${name}`}>
-          <Avatar className="size-8">
-            <AvatarFallback>{initials(name)}</AvatarFallback>
-          </Avatar>
-          <span className="hidden text-sm font-medium sm:inline">{name}</span>
-        </Button>
+        {block ? (
+          <Button variant="ghost" className="bg-muted/60 h-auto w-full justify-start gap-3 rounded-xl p-3 text-left" aria-label={`Menú de usuario: ${name}`}>
+            <Avatar className="size-9">
+              <AvatarFallback className="bg-primary-soft text-primary-soft-foreground font-semibold">{initials(name)}</AvatarFallback>
+            </Avatar>
+            <span className="grid min-w-0 leading-tight">
+              <span className="truncate text-sm font-semibold">{name}</span>
+              <span className="text-muted-foreground truncate text-xs font-normal">{roleLabel}</span>
+            </span>
+          </Button>
+        ) : (
+          <Button variant="ghost" className="bg-card gap-2 rounded-xl border px-2 shadow-xs" aria-label={`Menú de usuario: ${name}`}>
+            <Avatar className="size-8">
+              <AvatarFallback className="bg-primary-soft text-primary-soft-foreground font-semibold">{initials(name)}</AvatarFallback>
+            </Avatar>
+          </Button>
+        )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align={block ? "start" : "end"} side={block ? "top" : "bottom"} className="w-56">
         <DropdownMenuLabel className="grid gap-0.5">
           <span>{name}</span>
           <span className="text-muted-foreground text-xs font-normal">{roleLabel}</span>
