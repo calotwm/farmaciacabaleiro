@@ -172,7 +172,56 @@ Module `src/modules/catalog` (products, categories, units). Pages: `/productos` 
   with the cleaned code (`normalizeBarcode`). In the product list a barcode that matches a product opens it directly.
 - Suppliers do not exist as a module yet: products reference them through a read-only `SupplierLookup` port.
 
-## 9. Accepted assumptions
+## 9. Inventory: lots and stock movements
+
+Module `src/modules/inventory`. Pages: `/lotes` (list, `/lotes/[id]` detail with history), `/movimientos` (immutable history),
+`/movimientos/nuevo` (fast flow and manual lot entry), stock breakdown and FEFO table on `/productos/[id]`.
+
+**Domain (pure, unit-tested)**
+- Effective lot state: `EXPIRED` when today > expiry date (whatever is stored), else the stored status.
+  A lot is usable for normal exits only if effectively `AVAILABLE`.
+- Stock breakdown derived from lots (no counter): each unit lands in exactly one bucket. Expired lot -> `expired`; `QUARANTINE` /
+  `BLOCKED` lot -> `blocked` (all units); otherwise `blockedQuantity` is `blocked`. `available = physical - blocked - expired`
+  (the spec formula would double count a quarantined lot that also has blocked units, or a quarantined expired lot).
+- FEFO allocator: earliest expiry, then `receivedAt`, then lot number; usable units only (on hand minus blocked);
+  `InsufficientStockError` states the available quantity.
+- Movement planners (`movement-rules.ts`) turn "current lots + command" into new lot state + movements, or throw.
+  Quantities are positive integers (1..1,000,000); direction comes from the type.
+
+| Type | Permission | Rules |
+| --- | --- | --- |
+| `ENTRY` | `inventory.write` | Creates the lot, or adds to the lot with the same number and expiry. New lots cannot be already expired. Archived products cannot receive stock |
+| `EXIT` | `inventory.write` | Usable lots only; FEFO by default, or a chosen lot that must itself be usable. Never takes blocked units |
+| `ADJUSTMENT_IN/OUT` | `inventory.write` | Reason required; not on expired lots |
+| `RETURN`, `WRITE_OFF` | `inventory.writeoff` | Reason required; the only types (with count corrections) an expired lot accepts |
+| `BLOCK` / `UNBLOCK` | `inventory.write` | Reason required. Block some units, or put the whole lot in quarantine/blocked; unblock units or the lot. Not on expired lots |
+
+Removals (adjustment out, write-off, return) may take blocked units too (a quarantined lot is what usually gets written off);
+the blocked counter is clamped to what remains. A lot reaching 0 becomes `DEPLETED`; a depleted lot that receives stock is
+`AVAILABLE` again.
+
+**Transaction and concurrency.** Every operation is ONE Prisma transaction: lock the product row
+(`SELECT ... FOR NO KEY UPDATE`), read its lots (after the lock, so the values are current), plan, update lots, append movements.
+Locking the product serializes all stock operations on it, so two concurrent exits can never drive a lot negative (covered by an
+integration test with `Promise.all`). The DB CHECK constraints are the last line of defence.
+
+**Alerts.** After the commit, outside the transaction, `StockLevelAlerts.evaluate` (port, Prisma adapter) computes the available
+stock; `available <= minStock` creates a `LOW_STOCK` `AlertEvent` (`OUT_OF_STOCK` when nothing is available) keyed by
+product + rule + AR date, plus one `Notification` per active user that can read inventory. Both inserts ignore conflicts, so a
+repeated evaluation creates nothing. Failures are logged and swallowed: they never undo a movement. T4 reuses/extends the port.
+
+**Audit.** Every operation writes `stock.<type>` (entity `product`) with the movements, reason and, for entries, the lot.
+
+**Reasons.** `reasonId` must belong to the catalog kind of the type (adjustment / write-off / return); `reasonText` is free text.
+Reason-requiring types accept either.
+
+**Testing approach.** `stock_movements` is append-only, so anything that ever had a movement cannot be deleted. Integration tests
+run inside one transaction that is always rolled back (the module is built with the outer transaction as reader and
+`TransactionRunner`), so nothing is left behind. The concurrency tests need real transactions and commit: they use one
+`TEST-<uuid>` product, a permanent inactive test user and disabled alerts, so no notification reaches real users. E2E products are
+named `E2E ...`; those with movements stay in the dev database and the E2E admin is deactivated instead of deleted.
+
+## 10. Accepted assumptions
 
 1. A lot expires at the end of the stated day; `MM/AAAA` means the last day of the month.
 2. Expired lots only allow write-off/return with a reason.
@@ -181,7 +230,7 @@ Module `src/modules/catalog` (products, categories, units). Pages: `/productos` 
 5. Single tenant, no POS integration.
 6. Zero budget: anything paid is replaced by a free alternative or skipped and documented.
 
-## 10. Decisions (ADR-style)
+## 11. Decisions (ADR-style)
 
 | # | Decision | Why |
 | --- | --- | --- |
@@ -198,3 +247,5 @@ Module `src/modules/catalog` (products, categories, units). Pages: `/productos` 
 | 11 | Railway proxy cert is self-signed | Dev-only `DATABASE_SSL_REJECT_UNAUTHORIZED=false`; production uses private network or verified TLS |
 | 12 | `isDomainError` / `hasErrorCode` instead of `instanceof` at module edges | Next.js can bundle `errors.ts` once per layer (RSC, server actions); class identity then differs and `instanceof` silently fails |
 | 13 | Form state echoes submitted values (never password/token fields) | React 19 resets uncontrolled forms after an action; users must not lose what they typed on a validation error |
+| 14 | Product row lock (`FOR NO KEY UPDATE`) to serialize stock operations | Simple, deadlock-free (one lock per operation), exact; per-lot conditional updates cannot express "current - blocked >= q" |
+| 15 | Planners are pure functions over lot state | The same FEFO plan runs in the browser preview and on the server, and is unit-testable without a database |

@@ -17,6 +17,7 @@ import {
   parsePage,
   parseSortDirection,
   type SearchParams,
+  uuidParam,
 } from "@/shared/application/list-query";
 import { normalizeBarcode } from "@/shared/domain/barcode";
 
@@ -38,8 +39,8 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
 
   const query = {
     search,
-    categoryId: firstParam(sp.categoryId),
-    supplierId: firstParam(sp.supplierId),
+    categoryId: uuidParam(sp.categoryId),
+    supplierId: uuidParam(sp.supplierId),
     status: parseOption(sp.status, PRODUCT_STATUS_FILTERS, ""),
     sort: parseOption(sp.sort, PRODUCT_SORT_FIELDS, "name"),
     dir: parseSortDirection(sp.dir, "asc"),

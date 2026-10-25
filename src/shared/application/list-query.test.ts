@@ -1,11 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { buildHref, firstParam, pageCount, pageRange, parseOption, parsePage, parseSortDirection } from "./list-query";
+import { buildHref, firstParam, pageCount, pageRange, parseOption, parsePage, parseSortDirection, uuidParam } from "./list-query";
 
 describe("list query helpers", () => {
   it("reads the first non-empty value of a param", () => {
     expect(firstParam(["  a ", "b"])).toBe("a");
     expect(firstParam("   ")).toBeUndefined();
     expect(firstParam(undefined)).toBeUndefined();
+  });
+
+  it("keeps only UUIDs for id filters", () => {
+    expect(uuidParam("7f6b1d2e-3c4a-4b5d-8e9f-0a1b2c3d4e5f")).toBe("7f6b1d2e-3c4a-4b5d-8e9f-0a1b2c3d4e5f");
+    expect(uuidParam("nope")).toBeUndefined();
+    expect(uuidParam(undefined)).toBeUndefined();
   });
 
   it("falls back to page 1 for invalid pages", () => {

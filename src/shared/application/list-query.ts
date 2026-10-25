@@ -1,3 +1,5 @@
+import { isUuid } from "@/shared/domain/ids";
+
 /** Helpers for server-side tables driven by URL search params (search, filters, sort, pagination). */
 
 export const DEFAULT_PAGE_SIZE = 20;
@@ -10,6 +12,12 @@ export function firstParam(value: string | string[] | undefined): string | undef
   const single = Array.isArray(value) ? value[0] : value;
   const trimmed = single?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+/** A filter param that must be a UUID (anything else is ignored instead of reaching a UUID column). */
+export function uuidParam(value: string | string[] | undefined): string | undefined {
+  const candidate = firstParam(value);
+  return candidate && isUuid(candidate) ? candidate : undefined;
 }
 
 export function parsePage(value: string | string[] | undefined): number {

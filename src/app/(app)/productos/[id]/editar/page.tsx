@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/modules/auth/server";
 import { getCatalogModule } from "@/modules/catalog/composition";
 import { ProductForm } from "@/modules/catalog/ui/product-form";
 import { hasErrorCode } from "@/shared/domain/errors";
+import { isUuid } from "@/shared/domain/ids";
 
 export const metadata: Metadata = { title: "Editar producto - Farmacia Cabaleiro" };
 
@@ -14,6 +15,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   if (!user || !hasPermission(user, "products.write")) return <AccessDenied message="No tenés permiso para editar productos." />;
 
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const { catalogService, taxonomyService } = getCatalogModule();
   const product = await catalogService.getProduct(user, id).catch((error) => {
     if (hasErrorCode(error, "NOT_FOUND")) return null;

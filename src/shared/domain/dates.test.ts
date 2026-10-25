@@ -8,6 +8,7 @@ import {
   fromDbDate,
   isValidCalendarDate,
   parseDisplayDate,
+  startOfDayInTz,
   todayInTz,
   toDbDate,
 } from "./dates";
@@ -33,6 +34,13 @@ describe.each(["UTC", "Asia/Tokyo", "America/Los_Angeles"])("with server TZ=%s",
     expect(formatDateTime(new Date("2026-03-10T02:59:00Z"))).toBe("09/03/2026 23:59");
     expect(formatDateTime(new Date("2026-03-10T03:00:00Z"))).toBe("10/03/2026 00:00");
     expect(formatDateTime(new Date("2026-07-01T15:05:00Z"))).toBe("01/07/2026 12:05");
+  });
+
+  it("startOfDayInTz is the Buenos Aires midnight, whatever the server TZ", () => {
+    process.env.TZ = serverTz;
+    expect(startOfDayInTz("2026-03-10").toISOString()).toBe("2026-03-10T03:00:00.000Z");
+    expect(startOfDayInTz("2026-12-31").toISOString()).toBe("2026-12-31T03:00:00.000Z");
+    expect(startOfDayInTz("2026-03-10", "Asia/Tokyo").toISOString()).toBe("2026-03-09T15:00:00.000Z");
   });
 
   it("formatDate and DB date round trips are timezone independent", () => {
