@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/page-header";
 import Link from "next/link";
 import { Pagination } from "@/components/pagination";
 import { Button } from "@/components/ui/button";
@@ -22,16 +23,21 @@ export default async function NotificationsPage({ searchParams }: { searchParams
 
   return (
     <div className="grid max-w-3xl gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Notificaciones</h1>
-        {unread > 0 ? (
-          <form action={markAllNotificationsReadAction}>
-            <Button type="submit" variant="outline">
-              Marcar todas como leídas ({unread})
-            </Button>
-          </form>
-        ) : null}
-      </div>
+      <PageHeader
+        title="Notificaciones"
+        description="Avisos generados por el sistema."
+        actions={
+          <>
+            {unread > 0 ? (
+              <form action={markAllNotificationsReadAction}>
+                <Button type="submit" variant="outline">
+                  Marcar todas como leídas ({unread})
+                </Button>
+              </form>
+            ) : null}
+          </>
+        }
+      />
       {items.length === 0 ? (
         <p className="text-muted-foreground">No hay notificaciones.</p>
       ) : (

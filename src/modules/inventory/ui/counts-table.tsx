@@ -7,7 +7,7 @@ import type { CountListItem } from "../application/ports";
 /** Presentational: the list of physical counts, newest first. */
 export function CountsTable({ counts }: { counts: CountListItem[] }) {
   return (
-    <Table>
+    <Table framed>
       <TableHeader>
         <TableRow>
           <TableHead>Abierto</TableHead>

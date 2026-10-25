@@ -134,7 +134,7 @@ export function TaxonomyAdmin({ kind, items }: { kind: TaxonomyKind; items: Taxo
   return (
     <div className="grid gap-6">
       <CreateForm kind={kind} />
-      <Table>
+      <Table framed>
         <TableHeader>
           <TableRow>
             <TableHead>Nombre</TableHead>

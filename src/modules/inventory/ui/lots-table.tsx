@@ -19,7 +19,7 @@ interface LotsTableProps {
 export function LotsTable({ lots, today, thresholds, sort, dir, params }: LotsTableProps) {
   const head = { sort, dir, basePath: "/lotes", params };
   return (
-    <Table>
+    <Table framed>
       <TableHeader>
         <TableRow>
           <SortableHead {...head} label="Producto" field="product" />

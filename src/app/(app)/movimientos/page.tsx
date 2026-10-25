@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/page-header";
 import Link from "next/link";
 import { AccessDenied } from "@/components/access-denied";
 import { Pagination } from "@/components/pagination";
@@ -62,22 +63,24 @@ export default async function MovementsPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="grid gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold">Movimientos</h1>
-          <p className="text-muted-foreground text-sm">Historial inmutable: los errores se corrigen con un movimiento compensatorio.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline">
-            <a href={buildHref("/api/export/movimientos", params)}>Exportar CSV</a>
-          </Button>
-          {canRegister ? (
-            <Button asChild>
-              <Link href="/movimientos/nuevo">Nuevo movimiento</Link>
+      <PageHeader
+        title="Movimientos"
+        description="Historial inmutable: los errores se corrigen con un movimiento compensatorio."
+        actions={
+          <>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <a href={buildHref("/api/export/movimientos", params)}>Exportar CSV</a>
             </Button>
-          ) : null}
-        </div>
-      </div>
+            {canRegister ? (
+              <Button asChild>
+                <Link href="/movimientos/nuevo">Nuevo movimiento</Link>
+              </Button>
+            ) : null}
+          </div>
+          </>
+        }
+      />
       <MovementFilters
         values={params}
         users={users.map((u) => ({ value: u.id, label: u.name }))}

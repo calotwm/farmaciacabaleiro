@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/page-header";
 import { AccessDenied } from "@/components/access-denied";
 import { Pagination } from "@/components/pagination";
 import { hasPermission } from "@/modules/auth/domain/permissions";
@@ -23,18 +24,15 @@ export default async function CountsPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="grid gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Conteos de stock</h1>
-        <p className="text-muted-foreground text-sm">Contá lo que hay en el depósito; al cerrar, las diferencias se corrigen con movimientos.</p>
-      </div>
+      <PageHeader title="Conteos de stock" description="Contá lo que hay en el depósito; al cerrar, las diferencias se corrigen con movimientos." />
       <section className="grid gap-3" aria-labelledby="open-count">
-        <h2 id="open-count" className="text-lg font-medium">
+        <h2 id="open-count" className="text-base font-semibold">
           Abrir un conteo
         </h2>
         <OpenCountForm categories={categories.map((c) => ({ value: c.id, label: c.name }))} />
       </section>
       <section className="grid gap-3" aria-labelledby="count-history">
-        <h2 id="count-history" className="text-lg font-medium">
+        <h2 id="count-history" className="text-base font-semibold">
           Conteos anteriores
         </h2>
         <CountsTable counts={items} />

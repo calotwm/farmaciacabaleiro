@@ -8,7 +8,7 @@ import { UserRoleSelect } from "./user-role-select";
 /** Presentational: receives data and the signed-in user id, renders the admin table. */
 export function UsersTable({ users, roles, currentUserId }: { users: UserSummary[]; roles: string[]; currentUserId: string }) {
   return (
-    <Table>
+    <Table framed>
       <TableHeader>
         <TableRow>
           <TableHead>Nombre</TableHead>

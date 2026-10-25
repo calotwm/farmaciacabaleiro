@@ -22,7 +22,7 @@ interface DeliveriesTableProps {
 export function DeliveriesTable({ deliveries, sort, dir, params, now, showSupplier = true }: DeliveriesTableProps) {
   const head = { sort, dir, basePath: "/entregas", params: { view: "list", ...params } };
   return (
-    <Table>
+    <Table framed>
       <TableHeader>
         <TableRow>
           <SortableHead {...head} label="Fecha y hora" field="scheduledAt" />

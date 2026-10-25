@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/page-header";
 import Link from "next/link";
 import { AccessDenied } from "@/components/access-denied";
 import { Pagination } from "@/components/pagination";
@@ -40,17 +41,19 @@ export default async function ReceiptsPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="grid gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-semibold">Recepciones</h1>
-          <p className="text-muted-foreground text-sm">Mercadería recibida de los proveedores. Para recibir un reparto programado, abrilo desde Entregas.</p>
-        </div>
-        {hasPermission(user, "receiving.write") ? (
-          <Button asChild>
-            <Link href="/recepciones/nueva">Recepción sin programar</Link>
-          </Button>
-        ) : null}
-      </div>
+      <PageHeader
+        title="Recepciones"
+        description="Mercadería recibida de los proveedores. Para recibir un reparto programado, abrilo desde Entregas."
+        actions={
+          <>
+          {hasPermission(user, "receiving.write") ? (
+            <Button asChild>
+              <Link href="/recepciones/nueva">Recepción sin programar</Link>
+            </Button>
+          ) : null}
+          </>
+        }
+      />
       <ReceiptFilters
         values={{ supplierId: query.supplierId, status: query.status, from: query.from, to: query.to, withIssues: query.withIssues }}
         suppliers={suppliers.map((supplier) => ({ value: supplier.id, label: supplier.name }))}

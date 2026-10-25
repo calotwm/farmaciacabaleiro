@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PageHeader } from "@/components/page-header";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AccessDenied } from "@/components/access-denied";
@@ -59,21 +60,24 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="grid gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Productos</h1>
-        <div className="flex flex-wrap gap-2">
-          {hasPermission(user, "inventory.read") ? (
-            <Button asChild variant="outline">
-              <a href={buildHref("/api/export/inventario", { ...params, sort: query.sort, dir: query.dir })}>Exportar CSV</a>
-            </Button>
-          ) : null}
-          {hasPermission(user, "products.write") ? (
-            <Button asChild>
-              <Link href="/productos/nuevo">Nuevo producto</Link>
-            </Button>
-          ) : null}
-        </div>
-      </div>
+      <PageHeader
+        title="Productos"
+        description="Catálogo con el stock disponible de cada producto."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            {hasPermission(user, "inventory.read") ? (
+              <Button asChild variant="outline">
+                <a href={buildHref("/api/export/inventario", { ...params, sort: query.sort, dir: query.dir })}>Exportar CSV</a>
+              </Button>
+            ) : null}
+            {hasPermission(user, "products.write") ? (
+              <Button asChild>
+                <Link href="/productos/nuevo">Nuevo producto</Link>
+              </Button>
+            ) : null}
+          </div>
+        }
+      />
       <ProductFilters
         values={{ ...params, sort: query.sort, dir: query.dir }}
         categories={categories.map((c) => ({ value: c.id, label: c.active ? c.name : `${c.name} (inactiva)` }))}

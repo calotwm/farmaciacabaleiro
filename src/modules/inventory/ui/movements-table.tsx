@@ -12,7 +12,7 @@ import { MOVEMENT_TYPE_LABELS, stockDirection } from "../domain/movement-type";
  */
 export function MovementsTable({ movements }: { movements: MovementListItem[] }) {
   return (
-    <Table>
+    <Table framed>
       <TableHeader>
         <TableRow>
           <TableHead>Fecha</TableHead>
