@@ -29,7 +29,7 @@ Everything in the spec, delivered in 5 stages. UI in Spanish (es-AR), DD/MM/YYYY
 - Forecast: far above 400 authored lines → strategy `ask-on-risk`; chain strategy: `stacked-to-main` (user choice, 2026-10-24).
 - Each slice branches from `main` (or its parent slice) and must work on its own. No git remote yet; PRs are created once a remote exists.
 - Remote: github.com/calotwm/farmaciacabaleiro (public — never commit secrets).
-- Slices: PR1 `feat/scaffold` = 95b00b4 (T1.1), merged to main (74a256d). PR2 `feat/data-model` (T1.2).
+- Slices: PR1 `feat/scaffold` = 95b00b4 (T1.1), merged to main (74a256d). PR2 `feat/data-model` = 07c40d1 (T1.2), merged. PR3 `feat/shared-kernel` = 78376d0 (T1.3). PR4 `feat/auth` = 765181e (T2.1).
 - Autonomy: user authorized finishing all tasks without review, including merging slice PRs (2026-10-24).
 - Cost policy: zero budget. Anything paid is replaced by a free alternative or skipped and documented. Deployment target re-evaluated at T5.4 against this (Railway usage may consume credits).
 - RDD: disabled globally by user on 2026-10-24 ("omitilo siempre"). T1.1 candidate declined. No reviews from here on; ordinary checks remain.
@@ -38,10 +38,10 @@ Everything in the spec, delivered in 5 stages. UI in Spanish (es-AR), DD/MM/YYYY
 ### Stage 1 — Architecture and data model
 - [x] T1.1 Scaffold Next.js + TS + Tailwind + shadcn/ui, ESLint, Vitest, Playwright, pnpm scripts
 - [x] T1.2 Prisma schema for all entities, constraints, indexes; initial migration + append-only trigger; applied to Railway DB
-- [ ] T1.3 Shared kernel: date/timezone utils (AR), money formatting, Zod env validation; architecture doc (`docs/architecture.md`)
+- [x] T1.3 Shared kernel: date/timezone utils (AR), money formatting, Zod env validation; architecture doc (`docs/architecture.md`)
 
 ### Stage 2 — Auth, permissions, products, lots, inventory
-- [ ] T2.1 Auth: login/logout, sessions, password reset, RBAC guards, secure admin bootstrap script, audit log
+- [x] T2.1 Auth: login/logout, sessions, password reset, RBAC guards, secure admin bootstrap script, audit log
 - [ ] T2.2 Catalog: products, categories, units (CRUD, archive, search, barcode input)
 - [ ] T2.3 Lots + stock movements: entries, exits (FEFO), adjustments, returns, write-offs, blocked/quarantine, expiry status
 - [ ] T2.4 Physical counts and reconciliation
@@ -70,6 +70,9 @@ Spec sections 1–15; no feature counted done if only its UI exists.
 - 2026-10-24: Environment inspected; Railway Postgres provisioned and verified (psql connection OK).
 - 2026-10-24: T1.1 done, commit 95b00b4, route: delegated (writer trigger, 2+ files). Evidence: lint, typecheck, build pass; test 2/2; e2e 1/1 (writer); parent spot check typecheck + test pass. Risk high (process_boundary in playwright.config.ts) -> review declined.
 - 2026-10-24: T1.2 done (delegated, writer trigger). Prisma 7.10.1 + pg adapter, 31 models, migrations init + stock_movement_append_only (trigger + CHECKs) applied to Railway; seed reference data idempotent. Evidence: validate, migrate status up to date, lint, typecheck, build pass; test 2/2; test:integration 4/4 (parent re-ran: 4/4). Decision: Railway proxy cert is self-signed -> dev-only DATABASE_SSL_REJECT_UNAUTHORIZED=false; production uses Railway private network or verified TLS.
+- 2026-10-25: T1.3 done (delegated), 78376d0. CalendarDate strings, TZDate-based today, expiry rules (EXPIRED after expiry day, CRITICAL <=30, WARNING <= max threshold), Zod env, DomainError family, docs/architecture.md. Evidence: lint, typecheck, build pass; test 42/42; integration 4/4.
+- 2026-10-25: T2.1 done (delegated), 765181e. argon2id, DB sessions (12h idle / 7d absolute), rate limit via AuditLog, reset tokens single-use 1h, ConsoleEmailSender default + SMTP when configured (zero cost), `pnpm admin:create`, users admin page, app shell. Evidence: lint, typecheck, build pass; test 63/63 (parent re-ran 63/63); integration 17/17; e2e 7/7.
+- Pending: `.env.example` lacks optional SESSION_SECRET, VAPID_*, SMTP_* placeholders — a permission deny rule blocks agent edits to .env files; user must add them or allow it. Documented in README and docs/architecture.md §5.
 
 ## Next step
-T1.3 shared kernel on branch `feat/shared-kernel`.
+T2.2 catalog on branch `feat/catalog`.
