@@ -31,9 +31,9 @@ export function UserMenu({ name, roleLabel, variant = "compact" }: { name: strin
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         {block ? (
-          <Button variant="ghost" className="bg-muted/60 h-auto w-full justify-start gap-3 rounded-xl p-3 text-left" aria-label={`Menú de usuario: ${name}`}>
-            <Avatar className="size-9">
-              <AvatarFallback className="bg-primary-soft text-primary-soft-foreground font-semibold">{initials(name)}</AvatarFallback>
+          <Button variant="ghost" className="hover:bg-muted h-auto w-full justify-start gap-3 rounded-md border p-2.5 text-left" aria-label={`Menú de usuario: ${name}`}>
+            <Avatar className="size-8">
+              <AvatarFallback className="bg-muted text-foreground font-semibold">{initials(name)}</AvatarFallback>
             </Avatar>
             <span className="grid min-w-0 leading-tight">
               <span className="truncate text-sm font-semibold">{name}</span>
@@ -41,9 +41,9 @@ export function UserMenu({ name, roleLabel, variant = "compact" }: { name: strin
             </span>
           </Button>
         ) : (
-          <Button variant="ghost" className="bg-card gap-2 rounded-xl border px-2 shadow-xs" aria-label={`Menú de usuario: ${name}`}>
+          <Button variant="ghost" className="bg-card gap-2 rounded-md border px-2" aria-label={`Menú de usuario: ${name}`}>
             <Avatar className="size-8">
-              <AvatarFallback className="bg-primary-soft text-primary-soft-foreground font-semibold">{initials(name)}</AvatarFallback>
+              <AvatarFallback className="bg-muted text-foreground font-semibold">{initials(name)}</AvatarFallback>
             </Avatar>
           </Button>
         )}

@@ -10,8 +10,8 @@ export function TopBarTitle({ firstName }: { firstName: string }) {
   const current = NAV_ITEMS.filter((item) => isActive(pathname, item.href)).sort((a, b) => b.href.length - a.href.length)[0];
   return (
     <div className="min-w-0 leading-tight">
-      <p className="truncate text-base font-semibold md:text-lg">{current?.href === "/" ? "Panel" : (current?.label ?? "Farmacia Cabaleiro")}</p>
-      <p className="text-muted-foreground hidden truncate text-sm sm:block">Hola, {firstName}</p>
+      <p className="truncate text-sm font-semibold md:text-base">{current?.href === "/" ? "Panel" : (current?.label ?? "Farmacia Cabaleiro")}</p>
+      <p className="text-muted-foreground hidden truncate text-xs sm:block">Hola, {firstName}</p>
     </div>
   );
 }
@@ -26,7 +26,7 @@ export function TopBarSearch() {
         name="q"
         aria-label="Buscar productos"
         placeholder="Buscar productos…"
-        className="bg-card placeholder:text-muted-foreground focus-visible:ring-ring/40 border-input h-10 w-full rounded-xl border pr-3 pl-9 text-sm shadow-xs outline-none focus-visible:ring-[3px]"
+        className="bg-card placeholder:text-muted-foreground focus-visible:ring-ring/40 border-input h-9 w-full rounded-md border pr-3 pl-9 text-sm outline-none focus-visible:ring-[3px]"
       />
     </form>
   );
