@@ -12,6 +12,7 @@ import { LotFilters } from "@/modules/inventory/ui/lot-filters";
 import { LotsTable } from "@/modules/inventory/ui/lots-table";
 import {
   DEFAULT_PAGE_SIZE,
+  buildHref,
   firstParam,
   parseOption,
   parsePage,
@@ -78,11 +79,16 @@ export default async function LotsPage({ searchParams }: { searchParams: Promise
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold">Lotes</h1>
-        {hasPermission(user, "inventory.write") ? (
-          <Button asChild>
-            <Link href="/movimientos/nuevo?type=ENTRY">Ingresar lote</Link>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <a href={buildHref("/api/export/lotes", { ...params, sort: query.sort, dir: query.dir })}>Exportar CSV</a>
           </Button>
-        ) : null}
+          {hasPermission(user, "inventory.write") ? (
+            <Button asChild>
+              <Link href="/movimientos/nuevo?type=ENTRY">Ingresar lote</Link>
+            </Button>
+          ) : null}
+        </div>
       </div>
       <LotFilters
         values={{ ...params, sort: query.sort, dir: query.dir }}
