@@ -48,3 +48,10 @@ Password reset links are logged to the server console unless SMTP is configured 
 deleted. Integration tests therefore run in a transaction that is rolled back; only the concurrency tests commit, using
 `TEST-<uuid>` products and a permanent inactive test user (see `docs/architecture.md` section 9). E2E specs create products named
 `E2E ...`; those with movements remain in the dev database and the throwaway E2E admin is deactivated instead of deleted.
+
+## Daily alerts
+
+`POST /api/cron/daily` evaluates expiry thresholds, expired lots with stock and upcoming/late deliveries (idempotent: a rerun creates
+nothing). It requires `Authorization: Bearer $CRON_SECRET` (503 if `CRON_SECRET` is unset in the app environment).
+`.github/workflows/daily-alerts.yml` calls it every day at 08:00 Argentina time; set the repository secrets `APP_URL` and
+`CRON_SECRET` (the workflow skips when `APP_URL` is empty). Opening the dashboard also runs it at most once per Argentine day.

@@ -7,6 +7,7 @@ import { LatestMovements, UnreadAlerts } from "@/modules/dashboard/ui/dashboard-
 import { KpiGrid } from "@/modules/dashboard/ui/kpi-grid";
 import { prisma } from "@/shared/infrastructure/db/prisma";
 import { readGeneralSettings } from "@/modules/settings/infrastructure/read-general-settings";
+import { getAlertsModule } from "@/modules/alerts/composition";
 import { todayInTz } from "@/shared/domain/dates";
 
 export const metadata: Metadata = { title: "Inicio - Farmacia Cabaleiro" };
@@ -15,6 +16,11 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const user = await getCurrentUser();
   if (!user) return null;
+
+  // Fallback for the daily GitHub Actions trigger: runs at most once per AR day; never blocks the page.
+  await getAlertsModule()
+    .dailyAlerts.runDailyAlertsIfDue()
+    .catch((error: unknown) => console.error("Daily alerts fallback failed", error));
 
   const { reads } = getDashboardModule();
   const now = new Date();

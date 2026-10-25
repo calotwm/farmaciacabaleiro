@@ -4,7 +4,18 @@ import { SidebarNav } from "./sidebar-nav";
 import { UserMenu } from "./user-menu";
 
 /** Presentational shell: sidebar on desktop, drawer on mobile, user menu in the header. */
-export function AppShell({ userName, roleLabel, children }: { userName: string; roleLabel: string; children: ReactNode }) {
+export function AppShell({
+  userName,
+  roleLabel,
+  bell,
+  children,
+}: {
+  userName: string;
+  roleLabel: string;
+  /** Notification bell (server-rendered by the layout). */
+  bell?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <div className="flex min-h-screen">
       <aside className="bg-card hidden w-64 shrink-0 border-r p-4 md:block">
@@ -14,7 +25,8 @@ export function AppShell({ userName, roleLabel, children }: { userName: string; 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="bg-card flex h-14 items-center justify-between gap-2 border-b px-4">
           <MobileNav />
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            {bell}
             <UserMenu name={userName} roleLabel={roleLabel} />
           </div>
         </header>
