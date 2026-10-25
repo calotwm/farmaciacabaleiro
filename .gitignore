@@ -10,3 +10,6 @@ test-results/
 .atl/
 *.tsbuildinfo
 next-env.d.ts
+
+# Prisma generated client
+/src/generated/
