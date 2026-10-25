@@ -18,7 +18,7 @@ interface SelectFieldProps extends Omit<ComponentProps<"select">, "id" | "name">
 }
 
 const SELECT_CLASS =
-  "flex h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive md:text-sm dark:bg-input/30";
+  "flex h-9 w-full min-w-0 rounded-md border border-input bg-card px-3 py-1 text-base outline-none transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive md:text-sm";
 
 /** Labelled native select (works without JS, in GET filter forms and in server-action forms). */
 export function SelectField({ name, label, options, placeholder, errors, hint, className, ...selectProps }: SelectFieldProps) {
