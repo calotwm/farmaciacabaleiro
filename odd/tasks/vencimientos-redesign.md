@@ -15,8 +15,8 @@ the Configuración area. Every figure comes from a real query; no business-logic
 ## Tasks
 - [x] V1 Design system + shell (tokens, font, shared ui, sidebar/top bar/drawer) - PR #22, merge 3fae1fb
 - [x] V2 `/vencimientos` page (buckets, table, filters, summary strip, monthly SVG chart, CSV export) - PR #23, merge 223a6a1
-- [x] V3 Dashboard (KPI row, prioritized expirations table, separate panels, upcoming deliveries, quick actions) - branch `feat/dashboard-redesign`
-- [ ] V4 Configuración completion + polish of the other main pages
+- [x] V3 Dashboard (KPI row, prioritized expirations table, separate panels, upcoming deliveries, quick actions) - PR #24, merge 1a3e8f4
+- [x] V4 Configuración completion + polish of the other main pages - branch `feat/settings-and-polish`
 
 ## Routes
 - All tasks: inline (single writer; mapped the shell, ui kit, dashboard and lots query files directly).
@@ -28,3 +28,7 @@ the Configuración area. Every figure comes from a real query; no business-logic
 - V2 checks: pnpm lint clean; pnpm typecheck clean; pnpm test 44 files / 312 tests; pnpm build ok; expirations integration 1/1. Authenticated page not viewed in a browser (no credentials used); dev-server curl sanity skipped.
 - V3: compact KPI strip (existing stock KPIs, expiring card captioned with its window); prioritized table of lots expiring in 30 days (8 rows, expired lots excluded) and separate panels for expired-with-stock, low/out-of-stock (new `lowStockProducts` read, same rule as the KPI counts), upcoming supplier deliveries (new `upcomingDeliveries` read, open visits oldest first so late ones lead, flagged with the existing `deliveryAlertState`, plus the four delivery counters), last movements and unread alerts. Quick actions in the header, gated by receiving.write / inventory.write / inventory.read. Replaced `expiringLots` by `upcomingLots`/`expiredLots` (card-grid hero and tinted icon circles removed); delivery status badges moved to the new palette.
 - V3 checks: pnpm lint clean; pnpm typecheck clean; pnpm test 44 files / 312 tests; dashboard integration file 4/4 (rewritten for the new reads); pnpm build ok. Not visually verified.
+- V4 mapping: /configuracion was a bare link list; existing pages general (all four values in one form), notificaciones, usuarios, categorias, unidades. Settings stored but unused: currency and defaultMinStock; thresholds were used.
+- V4: /configuracion now has a layout with a section switcher filtered by permission (General, Vencimientos, Notificaciones, Categorías, Unidades, Usuarios y roles, Mi cuenta; the index redirects to the first visible section). General (pharmacy name, currency, default min stock) and Vencimientos (thresholds plus how lots are classified, from the real settings) are separate forms that save only their own section through the unchanged update service. New Mi cuenta section: own password change (new AuthService.changePassword: verifies the current password, applies the existing policy, revokes all sessions and opens a fresh one for this device; unit-tested). Wiring: default min stock prefills the new-product form; the configured currency is used in product/lot/receipt detail and in the product, price and movement-cost labels.
+- V4 polish (styling only): shared PageHeader on productos, lotes, proveedores, entregas, recepciones, movimientos, conteos, notificaciones; framed tables (Table framed) and framed filter bars on the list pages; delivery status badges in the new palette.
+- V4 checks: pnpm lint clean; pnpm typecheck clean; pnpm test 46 files / 322 tests; pnpm build ok. No integration file changed. Not visually verified; password change not exercised against a real session.
