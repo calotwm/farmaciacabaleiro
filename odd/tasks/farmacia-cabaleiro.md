@@ -32,7 +32,7 @@ Everything in the spec, delivered in 5 stages. UI in Spanish (es-AR), DD/MM/YYYY
 
 ## Tasks
 ### Stage 1 — Architecture and data model
-- [ ] T1.1 Scaffold Next.js + TS + Tailwind + shadcn/ui, ESLint, Vitest, Playwright, pnpm scripts
+- [x] T1.1 Scaffold Next.js + TS + Tailwind + shadcn/ui, ESLint, Vitest, Playwright, pnpm scripts
 - [ ] T1.2 Prisma schema for all entities, constraints, indexes; initial migration + append-only trigger; applied to Railway DB
 - [ ] T1.3 Shared kernel: date/timezone utils (AR), money formatting, Zod env validation; architecture doc (`docs/architecture.md`)
 
