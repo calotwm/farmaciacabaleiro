@@ -4,6 +4,9 @@ import type { DbClient } from "@/shared/infrastructure/db/types";
 import type {
   CountDetail,
   CountListItem,
+  ExpirationFigures,
+  ExpirationSummary,
+  ExpirationSummaryQuery,
   LotListItem,
   LotListQuery,
   MovementListItem,
@@ -132,6 +135,21 @@ export class PrismaStockReadRepository implements StockReadRepository {
       }),
     ]);
     return { items: rows.map(toLotItem), total };
+  }
+
+  async expirationSummary(query: ExpirationSummaryQuery): Promise<ExpirationSummary> {
+    // Built on the list's own where-clause so every total matches what the table shows for the same filters.
+    const base = { search: query.search, categoryId: query.categoryId, supplierId: query.supplierId, withStock: true, sort: "expiry", dir: "asc", page: 1, pageSize: 1, today: query.today } as const;
+    const figures = async (filters: Pick<LotListQuery, "status" | "expiryFrom" | "expiryTo">): Promise<ExpirationFigures> => {
+      const result = await this.db.lot.aggregate({ where: lotWhere({ ...base, ...filters }), _count: { _all: true }, _sum: { currentQuantity: true } });
+      return { lots: result._count._all, units: result._sum.currentQuantity ?? 0 };
+    };
+    const [expired, windows, ranges] = await Promise.all([
+      figures({ status: "EXPIRED" }),
+      Promise.all(query.windows.map(async (days) => ({ days, ...(await figures({ status: "", expiryFrom: query.today, expiryTo: addDays(query.today, days) })) }))),
+      Promise.all(query.ranges.map(async (range) => ({ key: range.key, ...(await figures({ status: "", expiryFrom: range.from, expiryTo: range.to })) }))),
+    ]);
+    return { expired, windows, ranges };
   }
 
   async getLot(id: string) {
