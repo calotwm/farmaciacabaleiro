@@ -30,7 +30,7 @@ function newEmail(label: string) {
 }
 
 async function signIn(address: string, password = PASSWORD, ipAddress = ip) {
-  return authService.login({ email: address, password, ip: ipAddress });
+  return authService.login({ identifier: address, password, ip: ipAddress });
 }
 
 async function actorFor(address: string): Promise<AuthUser> {

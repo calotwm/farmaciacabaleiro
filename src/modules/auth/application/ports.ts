@@ -21,6 +21,7 @@ export interface UserSummary {
 
 export interface UserRepository {
   findByEmail(email: string): Promise<UserRecord | null>;
+  findByUsername(username: string): Promise<UserRecord | null>;
   findById(id: string): Promise<UserRecord | null>;
   /** Throws ConflictError when the email is already taken or RoleNotFound when the role is missing. */
   create(input: { email: string; name: string; passwordHash: string; roleName: string }): Promise<UserRecord>;

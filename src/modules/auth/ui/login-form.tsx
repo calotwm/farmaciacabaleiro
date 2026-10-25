@@ -18,12 +18,12 @@ export function LoginForm({ next, justReset }: { next?: string; justReset?: bool
       />
       {next ? <input type="hidden" name="next" value={next} /> : null}
       <FormField
-        name="email"
-        label="Email"
-        type="email"
+        name="identifier"
+        label="Usuario o email"
+        type="text"
         autoComplete="username"
         required
-        errors={state.fieldErrors?.email}
+        errors={state.fieldErrors?.identifier}
       />
       <FormField
         name="password"

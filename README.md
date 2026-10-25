@@ -79,7 +79,9 @@ GitHub Actions secrets for the daily alerts workflow: `APP_URL` and `CRON_SECRET
 
 ### Create the first admin in production
 
-Run this in your own terminal (the password prompt needs an interactive TTY):
+Set `ADMIN_USERNAME` and `ADMIN_PASSWORD` (and optionally `ADMIN_NAME`) as variables on the `web` service in Railway. On the next deploy the seed creates that admin if the username does not exist yet (it never overwrites an existing user). Sign in with the username and password; the email field accepts either. Remove `ADMIN_PASSWORD` from the variables afterwards if you prefer.
+
+Alternative: run this in your own terminal (the password prompt needs an interactive TTY):
 
 ```bash
 railway ssh --service web
