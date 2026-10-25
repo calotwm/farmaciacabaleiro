@@ -29,7 +29,7 @@ Everything in the spec, delivered in 5 stages. UI in Spanish (es-AR), DD/MM/YYYY
 - Forecast: far above 400 authored lines → strategy `ask-on-risk`; chain strategy: `stacked-to-main` (user choice, 2026-10-24).
 - Each slice branches from `main` (or its parent slice) and must work on its own. No git remote yet; PRs are created once a remote exists.
 - Remote: github.com/calotwm/farmaciacabaleiro (public — never commit secrets).
-- Slices: PR1 `feat/scaffold` = 95b00b4 (T1.1), merged to main (74a256d). PR2 `feat/data-model` = 07c40d1 (T1.2), merged. PR3 `feat/shared-kernel` = 78376d0 (T1.3). PR4 `feat/auth` = 765181e (T2.1).
+- Slices: PR1 `feat/scaffold` = 95b00b4 (T1.1), merged to main (74a256d). PR2 `feat/data-model` = 07c40d1 (T1.2), merged. PR3 `feat/shared-kernel` = 78376d0 (T1.3). PR4 `feat/auth` = 765181e (T2.1), both merged. PR5 `feat/catalog` = 363565b (T2.2). PR6 `feat/inventory` = 6e9e833 (T2.3). PR7 `feat/stock-counts` = a29ed94 (T2.4).
 - Autonomy: user authorized finishing all tasks without review, including merging slice PRs (2026-10-24).
 - Cost policy: zero budget. Anything paid is replaced by a free alternative or skipped and documented. Deployment target re-evaluated at T5.4 against this (Railway usage may consume credits).
 - RDD: disabled globally by user on 2026-10-24 ("omitilo siempre"). T1.1 candidate declined. No reviews from here on; ordinary checks remain.
@@ -42,9 +42,9 @@ Everything in the spec, delivered in 5 stages. UI in Spanish (es-AR), DD/MM/YYYY
 
 ### Stage 2 — Auth, permissions, products, lots, inventory
 - [x] T2.1 Auth: login/logout, sessions, password reset, RBAC guards, secure admin bootstrap script, audit log
-- [ ] T2.2 Catalog: products, categories, units (CRUD, archive, search, barcode input)
-- [ ] T2.3 Lots + stock movements: entries, exits (FEFO), adjustments, returns, write-offs, blocked/quarantine, expiry status
-- [ ] T2.4 Physical counts and reconciliation
+- [x] T2.2 Catalog: products, categories, units (CRUD, archive, search, barcode input)
+- [x] T2.3 Lots + stock movements: entries, exits (FEFO), adjustments, returns, write-offs, blocked/quarantine, expiry status
+- [x] T2.4 Physical counts and reconciliation
 
 ### Stage 3 — Suppliers, calendar, receiving
 - [ ] T3.1 Suppliers CRUD + supplied products
@@ -74,5 +74,8 @@ Spec sections 1–15; no feature counted done if only its UI exists.
 - 2026-10-25: T2.1 done (delegated), 765181e. argon2id, DB sessions (12h idle / 7d absolute), rate limit via AuditLog, reset tokens single-use 1h, ConsoleEmailSender default + SMTP when configured (zero cost), `pnpm admin:create`, users admin page, app shell. Evidence: lint, typecheck, build pass; test 63/63 (parent re-ran 63/63); integration 17/17; e2e 7/7.
 - Pending: `.env.example` lacks optional SESSION_SECRET, VAPID_*, SMTP_* placeholders — a permission deny rule blocks agent edits to .env files; user must add them or allow it. Documented in README and docs/architecture.md §5.
 
+- 2026-10-25: T2.2–T2.4 done (one delegated writer, three stacked commits). Migrations: units.active; COUNT_CORRECTION_IN/OUT. Decisions: product code auto-generated when empty; stock buckets mutually exclusive (expired > quarantine/blocked > blockedQuantity); per-product row lock (FOR NO KEY UPDATE) serializes stock ops; expired lots accept only WRITE_OFF/RETURN/count corrections; write-off/return need inventory.writeoff (admin only by seed); low-stock alerts after commit, log-and-swallow, skipDuplicates; count reconciliation uses counted − current quantity; isDomainError helper because Next bundles errors.ts twice. Evidence after T2.4: lint, typecheck, build pass; test 176/176; integration 50/50 (parent re-ran 50/50); e2e 12/12.
+- Decision: the Railway dev DB accumulates TEST-/E2E- rows (append-only movements can't be deleted). Production must use a separate, clean database.
+
 ## Next step
-T2.2 catalog on branch `feat/catalog`.
+T3.1–T3.3 suppliers, deliveries, receiving on branch `feat/suppliers`.
