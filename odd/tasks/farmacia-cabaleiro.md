@@ -28,12 +28,16 @@ Everything in the spec, delivered in 5 stages. UI in Spanish (es-AR), DD/MM/YYYY
 ## Delivery
 - Forecast: far above 400 authored lines → strategy `ask-on-risk`; chain strategy: `stacked-to-main` (user choice, 2026-10-24).
 - Each slice branches from `main` (or its parent slice) and must work on its own. No git remote yet; PRs are created once a remote exists.
-- Slices: (recorded as they are cut)
+- Remote: github.com/calotwm/farmaciacabaleiro (public — never commit secrets).
+- Slices: PR1 `feat/scaffold` = 95b00b4 (T1.1), merged to main (74a256d). PR2 `feat/data-model` (T1.2).
+- Autonomy: user authorized finishing all tasks without review, including merging slice PRs (2026-10-24).
+- Cost policy: zero budget. Anything paid is replaced by a free alternative or skipped and documented. Deployment target re-evaluated at T5.4 against this (Railway usage may consume credits).
+- RDD: disabled globally by user on 2026-10-24 ("omitilo siempre"). T1.1 candidate declined. No reviews from here on; ordinary checks remain.
 
 ## Tasks
 ### Stage 1 — Architecture and data model
 - [x] T1.1 Scaffold Next.js + TS + Tailwind + shadcn/ui, ESLint, Vitest, Playwright, pnpm scripts
-- [ ] T1.2 Prisma schema for all entities, constraints, indexes; initial migration + append-only trigger; applied to Railway DB
+- [x] T1.2 Prisma schema for all entities, constraints, indexes; initial migration + append-only trigger; applied to Railway DB
 - [ ] T1.3 Shared kernel: date/timezone utils (AR), money formatting, Zod env validation; architecture doc (`docs/architecture.md`)
 
 ### Stage 2 — Auth, permissions, products, lots, inventory
@@ -64,6 +68,8 @@ Spec sections 1–15; no feature counted done if only its UI exists.
 
 ## Progress
 - 2026-10-24: Environment inspected; Railway Postgres provisioned and verified (psql connection OK).
+- 2026-10-24: T1.1 done, commit 95b00b4, route: delegated (writer trigger, 2+ files). Evidence: lint, typecheck, build pass; test 2/2; e2e 1/1 (writer); parent spot check typecheck + test pass. Risk high (process_boundary in playwright.config.ts) -> review declined.
+- 2026-10-24: T1.2 done (delegated, writer trigger). Prisma 7.10.1 + pg adapter, 31 models, migrations init + stock_movement_append_only (trigger + CHECKs) applied to Railway; seed reference data idempotent. Evidence: validate, migrate status up to date, lint, typecheck, build pass; test 2/2; test:integration 4/4 (parent re-ran: 4/4). Decision: Railway proxy cert is self-signed -> dev-only DATABASE_SSL_REJECT_UNAUTHORIZED=false; production uses Railway private network or verified TLS.
 
 ## Next step
-T1.1 scaffold on branch `feat/scaffold`.
+T1.3 shared kernel on branch `feat/shared-kernel`.
