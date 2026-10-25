@@ -42,7 +42,10 @@ enum StockMovementType {
   ADJUSTMENT_OUT
   RETURN
   WRITE_OFF
+  // Legacy, direction-less value: never written. Counts use the _IN/_OUT pair.
   COUNT_CORRECTION
+  COUNT_CORRECTION_IN
+  COUNT_CORRECTION_OUT
   BLOCK
   UNBLOCK
 

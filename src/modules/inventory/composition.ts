@@ -2,6 +2,7 @@ import { recordAudit, type RecordAudit } from "@/modules/audit";
 import { prisma } from "@/shared/infrastructure/db/prisma";
 import { type DbClient, type TransactionRunner, prismaTransactionRunner } from "@/shared/infrastructure/db/types";
 import type { StockLevelAlerts } from "./application/ports";
+import { createStockCounts } from "./application/stock-counts";
 import { createStockOperations } from "./application/stock-operations";
 import { createStockQueries } from "./application/stock-queries";
 import { PrismaStockLevelAlerts } from "./infrastructure/prisma-stock-level-alerts";
@@ -25,15 +26,17 @@ export function buildInventoryModule(overrides: InventoryModuleOverrides = {}) {
   const db = overrides.db ?? prisma;
   const transact = overrides.transact ?? prismaTransactionRunner(prisma);
   const stockLevelAlerts = new PrismaStockLevelAlerts(db);
-  const stockOperations = createStockOperations({
+  const shared = {
     uow: new PrismaStockUnitOfWork(transact),
     alerts: overrides.alerts ?? stockLevelAlerts,
     audit: overrides.audit ?? recordAudit,
     now: overrides.now,
     onAlertError: overrides.onAlertError,
-  });
+  };
+  const stockOperations = createStockOperations(shared);
+  const stockCounts = createStockCounts(shared);
   const stockQueries = createStockQueries({ reads: new PrismaStockReadRepository(db), now: overrides.now });
-  return { stockOperations, stockQueries, stockLevelAlerts };
+  return { stockOperations, stockCounts, stockQueries, stockLevelAlerts };
 }
 
 type InventoryModule = ReturnType<typeof buildInventoryModule>;

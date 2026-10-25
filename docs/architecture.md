@@ -221,7 +221,26 @@ run inside one transaction that is always rolled back (the module is built with 
 `TEST-<uuid>` product, a permanent inactive test user and disabled alerts, so no notification reaches real users. E2E products are
 named `E2E ...`; those with movements stay in the dev database and the E2E admin is deactivated instead of deleted.
 
-## 10. Accepted assumptions
+## 10. Physical counts
+
+Pages `/conteos` (list, open) and `/conteos/[id]`. Permission: `inventory.count` for everything; **closing also needs
+`inventory.write`** (reconciliation adjusts stock, and the seed has no separate "adjust" permission).
+
+- **Open**: snapshots every lot with units on hand, optionally limited by category and/or location (a substring of the lot or
+  product location). The scope is written to the notes of the count. An empty scope is rejected.
+- **Count**: one number per lot (blank = not counted); the difference (counted - expected) is live in the browser and everything is
+  saved in one request; a barcode scan moves the cursor to the lot of that product. Movements are still allowed while a count is open.
+- **Close** (one transaction): the count row is locked (`FOR UPDATE`), the affected products are locked in id order, and each counted
+  lot gets a compensating `COUNT_CORRECTION_IN` / `COUNT_CORRECTION_OUT` movement for `counted - CURRENT quantity`
+  (`referenceType = stock_count`, `referenceId = count id`) with the required reason. Using the current quantity instead of the
+  snapshot means a movement registered while the count was open is never counted twice. Lots nobody counted are left untouched.
+  A second (or concurrent) close finds the count closed and fails with a conflict; a closed count is read-only.
+- Lots counted while expired are corrected too and keep their expired state (the date decides it). A lot counted down to 0 becomes
+  `DEPLETED`; stock found in a depleted lot revives it.
+- Migration `count_correction_direction` added `COUNT_CORRECTION_IN/OUT` to `stock_movement_type`: the original
+  `COUNT_CORRECTION` had no direction and movements store a positive quantity. The old value stays in the enum (never written).
+
+## 11. Accepted assumptions
 
 1. A lot expires at the end of the stated day; `MM/AAAA` means the last day of the month.
 2. Expired lots only allow write-off/return with a reason.
@@ -230,7 +249,7 @@ named `E2E ...`; those with movements stay in the dev database and the E2E admin
 5. Single tenant, no POS integration.
 6. Zero budget: anything paid is replaced by a free alternative or skipped and documented.
 
-## 11. Decisions (ADR-style)
+## 12. Decisions (ADR-style)
 
 | # | Decision | Why |
 | --- | --- | --- |
@@ -249,3 +268,5 @@ named `E2E ...`; those with movements stay in the dev database and the E2E admin
 | 13 | Form state echoes submitted values (never password/token fields) | React 19 resets uncontrolled forms after an action; users must not lose what they typed on a validation error |
 | 14 | Product row lock (`FOR NO KEY UPDATE`) to serialize stock operations | Simple, deadlock-free (one lock per operation), exact; per-lot conditional updates cannot express "current - blocked >= q" |
 | 15 | Planners are pure functions over lot state | The same FEFO plan runs in the browser preview and on the server, and is unit-testable without a database |
+| 16 | Count corrections computed against the current lot quantity | Snapshot-based deltas would double count movements made while the count is open |
+| 17 | `COUNT_CORRECTION_IN/OUT` instead of a signed quantity | `stock_movements.quantity > 0` is a DB CHECK and direction comes from the type everywhere else |

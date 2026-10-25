@@ -1,7 +1,9 @@
 import type { Prisma } from "@/generated/prisma/client";
-import { addDays, startOfDayInTz, toDbDate } from "@/shared/domain/dates";
+import { addDays, fromDbDate, startOfDayInTz, toDbDate } from "@/shared/domain/dates";
 import type { DbClient } from "@/shared/infrastructure/db/types";
 import type {
+  CountDetail,
+  CountListItem,
   LotListItem,
   LotListQuery,
   MovementListItem,
@@ -174,6 +176,79 @@ export class PrismaStockReadRepository implements StockReadRepository {
   async listReasons(kind?: ReasonKind): Promise<ReasonRecord[]> {
     const rows = await this.db.adjustmentReason.findMany({ where: kind ? { kind } : {}, orderBy: [{ kind: "asc" }, { name: "asc" }] });
     return rows.map((row) => ({ id: row.id, name: row.name, kind: row.kind, active: row.active }));
+  }
+
+  async listCounts(page: number, pageSize: number): Promise<Page<CountListItem>> {
+    const [total, rows] = await Promise.all([
+      this.db.stockCount.count(),
+      this.db.stockCount.findMany({
+        include: { createdBy: true, _count: { select: { lines: true } } },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+    const counted = await this.db.stockCountLine.groupBy({
+      by: ["stockCountId"],
+      where: { stockCountId: { in: rows.map((row) => row.id) }, countedQuantity: { not: null } },
+      _count: { _all: true },
+    });
+    const countedBy = new Map(counted.map((group) => [group.stockCountId, group._count._all]));
+    return {
+      total,
+      items: rows.map((row) => ({
+        id: row.id,
+        status: row.status,
+        createdByName: row.createdBy.name,
+        notes: row.notes,
+        createdAt: row.createdAt,
+        closedAt: row.closedAt,
+        totalLines: row._count.lines,
+        countedLines: countedBy.get(row.id) ?? 0,
+      })),
+    };
+  }
+
+  async getCount(id: string): Promise<CountDetail | null> {
+    const row = await this.db.stockCount.findUnique({
+      where: { id },
+      include: {
+        createdBy: true,
+        lines: {
+          include: { lot: { include: { product: true } } },
+          orderBy: [{ product: { commercialName: "asc" } }, { lot: { expiryDate: "asc" } }, { lot: { lotNumber: "asc" } }],
+        },
+      },
+    });
+    if (!row) return null;
+    return {
+      id: row.id,
+      status: row.status,
+      createdByName: row.createdBy.name,
+      notes: row.notes,
+      createdAt: row.createdAt,
+      closedAt: row.closedAt,
+      totalLines: row.lines.length,
+      countedLines: row.lines.filter((line) => line.countedQuantity !== null).length,
+      lines: row.lines.map((line) => ({
+        id: line.id,
+        lotId: line.lotId,
+        lotNumber: line.lot.lotNumber,
+        expiryDate: fromDbDate(line.lot.expiryDate),
+        lotStatus: line.lot.status,
+        productId: line.productId,
+        productName: line.lot.product.commercialName,
+        productCode: line.lot.product.code,
+        barcode: line.lot.product.barcode,
+        sku: line.lot.product.sku,
+        location: line.lot.location ?? line.lot.product.location,
+        expectedQuantity: line.expectedQuantity,
+        countedQuantity: line.countedQuantity,
+        difference: line.difference,
+        reconciled: line.reconciled,
+        currentQuantity: line.lot.currentQuantity,
+      })),
+    };
   }
 
   async listMovementUsers() {

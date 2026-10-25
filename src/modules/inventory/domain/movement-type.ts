@@ -12,8 +12,21 @@ export const MOVEMENT_TYPES = [
 /** Types a user registers from the "Nuevo movimiento" flow. */
 export type RegistrableMovementType = (typeof MOVEMENT_TYPES)[number];
 
-/** Every type that can appear in the history (physical counts add their own, see stock counts). */
-export type MovementType = RegistrableMovementType | "COUNT_CORRECTION";
+/** Types written by a physical count when it is closed (the direction is part of the type). */
+export type CountCorrectionType = "COUNT_CORRECTION_IN" | "COUNT_CORRECTION_OUT";
+
+/**
+ * Every type that can appear in the history. "COUNT_CORRECTION" is a legacy, direction-less value
+ * kept in the enum for compatibility; nothing writes it any more.
+ */
+export type MovementType = RegistrableMovementType | CountCorrectionType | "COUNT_CORRECTION";
+
+export const HISTORY_MOVEMENT_TYPES: readonly MovementType[] = [
+  ...MOVEMENT_TYPES,
+  "COUNT_CORRECTION_IN",
+  "COUNT_CORRECTION_OUT",
+  "COUNT_CORRECTION",
+];
 
 export const MOVEMENT_TYPE_LABELS: Record<MovementType, string> = {
   ENTRY: "Entrada",
@@ -24,6 +37,8 @@ export const MOVEMENT_TYPE_LABELS: Record<MovementType, string> = {
   WRITE_OFF: "Baja",
   BLOCK: "Bloqueo",
   UNBLOCK: "Desbloqueo",
+  COUNT_CORRECTION_IN: "Corrección por conteo (suma)",
+  COUNT_CORRECTION_OUT: "Corrección por conteo (resta)",
   COUNT_CORRECTION: "Corrección por conteo",
 };
 
@@ -32,11 +47,13 @@ export function stockDirection(type: MovementType): 1 | -1 | 0 {
   switch (type) {
     case "ENTRY":
     case "ADJUSTMENT_IN":
+    case "COUNT_CORRECTION_IN":
       return 1;
     case "EXIT":
     case "ADJUSTMENT_OUT":
     case "RETURN":
     case "WRITE_OFF":
+    case "COUNT_CORRECTION_OUT":
       return -1;
     default:
       return 0;
@@ -52,6 +69,9 @@ export function reasonKindFor(type: MovementType): ReasonKind | null {
     case "ADJUSTMENT_OUT":
     case "BLOCK":
     case "UNBLOCK":
+    case "COUNT_CORRECTION_IN":
+    case "COUNT_CORRECTION_OUT":
+    case "COUNT_CORRECTION":
       return "ADJUSTMENT";
     case "WRITE_OFF":
       return "WRITE_OFF";
@@ -74,5 +94,11 @@ export function isWriteOffOrReturn(type: MovementType): boolean {
 
 /** Types an expired lot still accepts: it can only leave the shelf, never be dispensed or topped up. */
 export function allowedOnExpiredLot(type: MovementType): boolean {
-  return type === "WRITE_OFF" || type === "RETURN" || type === "COUNT_CORRECTION";
+  return (
+    type === "WRITE_OFF" ||
+    type === "RETURN" ||
+    type === "COUNT_CORRECTION_IN" ||
+    type === "COUNT_CORRECTION_OUT" ||
+    type === "COUNT_CORRECTION"
+  );
 }

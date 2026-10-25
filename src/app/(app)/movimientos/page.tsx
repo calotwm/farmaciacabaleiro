@@ -7,7 +7,7 @@ import { hasPermission } from "@/modules/auth/domain/permissions";
 import { getCurrentUser } from "@/modules/auth/server";
 import { getCatalogModule } from "@/modules/catalog/composition";
 import { getInventoryModule } from "@/modules/inventory/composition";
-import { MOVEMENT_TYPES, type MovementType } from "@/modules/inventory/domain/movement-type";
+import { HISTORY_MOVEMENT_TYPES, type MovementType } from "@/modules/inventory/domain/movement-type";
 import { MovementFilters } from "@/modules/inventory/ui/movement-filters";
 import { MovementsTable } from "@/modules/inventory/ui/movements-table";
 import { DEFAULT_PAGE_SIZE, firstParam, parsePage, type SearchParams, uuidParam } from "@/shared/application/list-query";
@@ -20,7 +20,7 @@ function validDate(value: string | string[] | undefined): string | undefined {
   return date && isValidCalendarDate(date) ? date : undefined;
 }
 
-const KNOWN_TYPES: readonly string[] = [...MOVEMENT_TYPES, "COUNT_CORRECTION"];
+const KNOWN_TYPES: readonly string[] = HISTORY_MOVEMENT_TYPES;
 
 export default async function MovementsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const user = await getCurrentUser();
