@@ -4,9 +4,9 @@
     "buildCommand": "pnpm build"
   },
   "deploy": {
-    "preDeployCommand": ["pnpm db:migrate && pnpm db:seed"],
-    "startCommand": "pnpm start",
+    "startCommand": "sh -c 'pnpm db:migrate && pnpm db:seed && pnpm start'",
     "healthcheckPath": "/login",
+    "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE"
   }
 }
