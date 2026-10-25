@@ -1,6 +1,7 @@
 import { ADMIN_ROLE } from "@/modules/auth/domain/permissions";
 import { type CalendarDate, toDbDate } from "@/shared/domain/dates";
 import type { DbClient } from "@/shared/infrastructure/db/types";
+import { dispatchSafely, type NotificationDispatcher, noopNotificationDispatcher } from "@/modules/alerts/application/ports";
 import type { StockLevelAlerts } from "../application/ports";
 import { evaluateStockLevel } from "../domain/low-stock";
 import { computeStockBreakdown } from "../domain/stock-breakdown";
@@ -12,7 +13,10 @@ import { toLotState } from "./prisma-stock-tx";
  * Notifications go to active users that can read inventory (admins and roles with `inventory.read`).
  */
 export class PrismaStockLevelAlerts implements StockLevelAlerts {
-  constructor(private readonly db: DbClient) {}
+  constructor(
+    private readonly db: DbClient,
+    private readonly dispatcher: NotificationDispatcher = noopNotificationDispatcher,
+  ) {}
 
   async evaluate(productId: string, today: CalendarDate): Promise<void> {
     const product = await this.db.product.findUnique({
@@ -44,7 +48,8 @@ export class PrismaStockLevelAlerts implements StockLevelAlerts {
       select: { id: true },
     });
     const out = rule === "OUT_OF_STOCK";
-    await this.db.notification.createMany({
+    const created = await this.db.notification.createManyAndReturn({
+      select: { id: true, userId: true, title: true, body: true, priority: true, link: true },
       data: recipients.map((user) => ({
         userId: user.id,
         alertEventId: event.id,
@@ -57,5 +62,7 @@ export class PrismaStockLevelAlerts implements StockLevelAlerts {
       })),
       skipDuplicates: true,
     });
+    // Only newly created notifications are returned, so a repeated evaluation never pushes twice.
+    await dispatchSafely(this.dispatcher, created);
   }
 }

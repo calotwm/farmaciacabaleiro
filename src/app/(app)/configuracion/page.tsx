@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/modules/auth/server";
 export default async function SettingsPage() {
   const user = await getCurrentUser();
   const links = [
+    { href: "/configuracion/notificaciones", label: "Notificaciones en el dispositivo", allowed: !!user },
     { href: "/configuracion/general", label: "General (farmacia, vencimientos)", allowed: !!user && hasPermission(user, "settings.manage") },
     { href: "/configuracion/usuarios", label: "Usuarios y roles", allowed: !!user && hasPermission(user, "users.manage") },
     { href: "/configuracion/categorias", label: "Categorías", allowed: !!user && hasPermission(user, "catalog.manage") },

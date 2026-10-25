@@ -27,6 +27,7 @@ pnpm dev
 | `pnpm test` | Unit tests (Vitest) |
 | `pnpm test:integration` | Integration tests against the dev database |
 | `pnpm test:e2e` | End-to-end tests (Playwright, Chromium) |
+| `pnpm push:keys` | Print a fresh VAPID key pair for Web Push |
 | `pnpm admin:create` | Create the first admin (`ADMIN_EMAIL`, `ADMIN_NAME`; password prompted, or `ADMIN_PASSWORD` for CI) |
 
 First e2e run needs `pnpm exec playwright install chromium`.
@@ -55,3 +56,11 @@ deleted. Integration tests therefore run in a transaction that is rolled back; o
 nothing). It requires `Authorization: Bearer $CRON_SECRET` (503 if `CRON_SECRET` is unset in the app environment).
 `.github/workflows/daily-alerts.yml` calls it every day at 08:00 Argentina time; set the repository secrets `APP_URL` and
 `CRON_SECRET` (the workflow skips when `APP_URL` is empty). Opening the dashboard also runs it at most once per Argentine day.
+
+## Web Push
+
+Optional. Generate a key pair with `pnpm push:keys` and set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT`
+(a `mailto:` or `https:` contact) in the app environment; all three are required together. Without them the app keeps working
+with in-app alerts only and `/configuracion/notificaciones` says push is not configured. Each user enables push per device
+there (the browser asks for permission only after clicking the button). On iPhone/iPad the app must first be installed to the
+home screen. Subscriptions answering 404/410 are disabled immediately, and any subscription after 5 consecutive failures.

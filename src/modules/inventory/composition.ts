@@ -1,3 +1,5 @@
+import type { NotificationDispatcher } from "@/modules/alerts/application/ports";
+import { getNotificationDispatcher } from "@/modules/alerts/dispatcher";
 import { recordAudit, type RecordAudit } from "@/modules/audit";
 import { prisma } from "@/shared/infrastructure/db/prisma";
 import { type DbClient, type TransactionRunner, prismaTransactionRunner } from "@/shared/infrastructure/db/types";
@@ -17,6 +19,8 @@ export interface InventoryModuleOverrides {
   audit?: RecordAudit;
   /** Replaces the Prisma low-stock alert adapter (tests). */
   alerts?: StockLevelAlerts;
+  /** External channel for new low-stock notifications (default: none). */
+  dispatcher?: NotificationDispatcher;
   now?: () => Date;
   onAlertError?: (error: unknown) => void;
 }
@@ -25,7 +29,7 @@ export interface InventoryModuleOverrides {
 export function buildInventoryModule(overrides: InventoryModuleOverrides = {}) {
   const db = overrides.db ?? prisma;
   const transact = overrides.transact ?? prismaTransactionRunner(prisma);
-  const stockLevelAlerts = new PrismaStockLevelAlerts(db);
+  const stockLevelAlerts = new PrismaStockLevelAlerts(db, overrides.dispatcher);
   const shared = {
     uow: new PrismaStockUnitOfWork(transact),
     alerts: overrides.alerts ?? stockLevelAlerts,
@@ -44,6 +48,6 @@ const globalForInventory = globalThis as unknown as { inventoryModule?: Inventor
 
 /** One instance per process (survives Next.js dev hot reloads). */
 export function getInventoryModule(): InventoryModule {
-  globalForInventory.inventoryModule ??= buildInventoryModule();
+  globalForInventory.inventoryModule ??= buildInventoryModule({ dispatcher: getNotificationDispatcher() });
   return globalForInventory.inventoryModule;
 }

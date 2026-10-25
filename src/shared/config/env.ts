@@ -65,3 +65,8 @@ export function getServerEnv(): ServerEnv {
 export function isSmtpConfigured(env: ServerEnv): boolean {
   return env.SMTP_HOST !== undefined;
 }
+
+/** Web Push is on only when the whole VAPID trio is set (the schema guarantees all-or-nothing). */
+export function isWebPushConfigured(env: ServerEnv): boolean {
+  return env.VAPID_PUBLIC_KEY !== undefined;
+}

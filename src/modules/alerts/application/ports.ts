@@ -17,6 +17,20 @@ export interface NotificationDispatcher {
 
 export const noopNotificationDispatcher: NotificationDispatcher = { dispatch: async () => {} };
 
+/** Post-commit dispatch that logs and swallows any failure (the in-app notification already exists). */
+export async function dispatchSafely(
+  dispatcher: NotificationDispatcher,
+  notifications: readonly CreatedNotification[],
+  onError: (error: unknown) => void = console.error,
+): Promise<void> {
+  if (notifications.length === 0) return;
+  try {
+    await dispatcher.dispatch(notifications);
+  } catch (error) {
+    onError(error);
+  }
+}
+
 export interface DailyAlertsResult {
   /** AR calendar day the run evaluated. */
   day: string;
