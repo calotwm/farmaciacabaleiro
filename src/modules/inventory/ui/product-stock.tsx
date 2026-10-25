@@ -14,7 +14,7 @@ const CARDS = [
 ] as const;
 
 /** Presentational: the four stock figures derived from the lots, and the lots in FEFO order. */
-export function ProductStockSection({ stock, productId }: { stock: ProductStock; productId: string }) {
+export function ProductStockSection({ stock, productId, thresholds }: { stock: ProductStock; productId: string; thresholds?: readonly number[] }) {
   return (
     <section className="grid gap-4" aria-labelledby="stock-heading">
       <h2 id="stock-heading" className="text-lg font-medium">
@@ -67,7 +67,7 @@ export function ProductStockSection({ stock, productId }: { stock: ProductStock;
                 <TableCell>{lot.currentQuantity}</TableCell>
                 <TableCell>{lot.blockedQuantity}</TableCell>
                 <TableCell>
-                  <LotStatusBadges lot={lot} today={stock.today} />
+                  <LotStatusBadges lot={lot} today={stock.today} thresholds={thresholds} />
                 </TableCell>
                 <TableCell>{lot.id === stock.firstUsableLotId ? <Badge>Usar primero</Badge> : null}</TableCell>
               </TableRow>

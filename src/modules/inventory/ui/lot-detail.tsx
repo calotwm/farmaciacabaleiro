@@ -15,7 +15,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 }
 
 /** Presentational: the facts of one lot. */
-export function LotDetail({ lot, today }: { lot: LotListItem; today: CalendarDate }) {
+export function LotDetail({ lot, today, thresholds }: { lot: LotListItem; today: CalendarDate; thresholds?: readonly number[] }) {
   return (
     <Card>
       <CardHeader>
@@ -24,7 +24,7 @@ export function LotDetail({ lot, today }: { lot: LotListItem; today: CalendarDat
       <CardContent>
         <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Row label="Estado">
-            <LotStatusBadges lot={lot} today={today} />
+            <LotStatusBadges lot={lot} today={today} thresholds={thresholds} />
           </Row>
           <Row label="Vencimiento">
             {formatDate(lot.expiryDate)} ({daysLeftLabel(daysUntil(lot.expiryDate, today))})

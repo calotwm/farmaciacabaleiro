@@ -3,7 +3,8 @@ import { type NextRequest, NextResponse } from "next/server";
 // Keep in sync with SESSION_COOKIE_NAME in src/modules/auth/domain/session-policy.ts
 // (not imported: middleware runs on the edge runtime and must stay dependency-free).
 const SESSION_COOKIE = "fc_session";
-const PUBLIC_PATHS = ["/login", "/recuperar", "/restablecer"];
+// /api/cron authenticates with its own bearer secret (see the route handler).
+const PUBLIC_PATHS = ["/login", "/recuperar", "/restablecer", "/api/cron"];
 
 /**
  * Cheap gate: redirects when no session cookie is present. It does NOT validate the

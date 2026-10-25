@@ -62,6 +62,8 @@ function lotWhere(query: LotListQuery): Prisma.LotWhereInput {
   if (query.expiryFrom) and.push({ expiryDate: { gte: toDbDate(query.expiryFrom) } });
   if (query.expiryTo) and.push({ expiryDate: { lte: toDbDate(query.expiryTo) } });
 
+  if (query.withStock) and.push({ currentQuantity: { gt: 0 } });
+
   // Status filters are on the EFFECTIVE state: a lot past its date is "EXPIRED" whatever is stored.
   switch (query.status) {
     case "":

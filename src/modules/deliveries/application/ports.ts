@@ -65,6 +65,8 @@ export interface DeliveryListQuery extends DeliveryFilters {
   to?: CalendarDate;
   /** Only open deliveries whose time has passed. */
   lateOnly?: boolean;
+  /** Only deliveries still waiting to happen (SCHEDULED or CONFIRMED). */
+  openOnly?: boolean;
   sort: DeliverySortField;
   dir: "asc" | "desc";
   page: number;

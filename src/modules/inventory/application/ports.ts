@@ -139,6 +139,8 @@ export interface LotListQuery {
   status: LotStatusFilter;
   expiryFrom?: CalendarDate;
   expiryTo?: CalendarDate;
+  /** Only lots with units on hand (matters for the "EXPIRED" and "ALL" statuses). */
+  withStock?: boolean;
   sort: LotSortField;
   dir: "asc" | "desc";
   page: number;

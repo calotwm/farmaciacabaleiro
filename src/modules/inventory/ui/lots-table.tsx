@@ -9,13 +9,14 @@ import { LotStatusBadges, daysLeftLabel } from "./lot-status-badges";
 interface LotsTableProps {
   lots: LotListItem[];
   today: CalendarDate;
+  thresholds?: readonly number[];
   sort: string;
   dir: SortDirection;
   params: Record<string, string | undefined>;
 }
 
 /** Presentational: one page of lots; sorting goes through the URL. */
-export function LotsTable({ lots, today, sort, dir, params }: LotsTableProps) {
+export function LotsTable({ lots, today, thresholds, sort, dir, params }: LotsTableProps) {
   const head = { sort, dir, basePath: "/lotes", params };
   return (
     <Table>
@@ -59,7 +60,7 @@ export function LotsTable({ lots, today, sort, dir, params }: LotsTableProps) {
               <TableCell>{lot.blockedQuantity}</TableCell>
               <TableCell>{lot.supplierName ?? "-"}</TableCell>
               <TableCell>
-                <LotStatusBadges lot={lot} today={today} />
+                <LotStatusBadges lot={lot} today={today} thresholds={thresholds} />
               </TableCell>
             </TableRow>
           ))

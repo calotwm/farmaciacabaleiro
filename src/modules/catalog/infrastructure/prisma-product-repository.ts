@@ -1,5 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client";
+import { todayInTz } from "@/shared/domain/dates";
 import { ConflictError } from "@/shared/domain/errors";
+import { productIdsAtStockLevel } from "@/shared/infrastructure/db/stock-level-sql";
 import { type DbClient, isUniqueViolation } from "@/shared/infrastructure/db/types";
 import type {
   DuplicateField,
@@ -160,6 +162,9 @@ export class PrismaProductRepository implements ProductRepository {
 
   async list(query: ProductListQuery): Promise<Page<ProductRecord>> {
     const where = buildWhere(query);
+    if (query.stock) {
+      (where.AND as Prisma.ProductWhereInput[]).push({ id: { in: await productIdsAtStockLevel(this.db, query.stock, todayInTz()) } });
+    }
     const [total, rows] = await Promise.all([
       this.db.product.count({ where }),
       this.db.product.findMany({

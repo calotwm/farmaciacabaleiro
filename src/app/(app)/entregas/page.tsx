@@ -57,12 +57,13 @@ export default async function DeliveriesPage({ searchParams }: { searchParams: P
     from: dateParam(sp.from),
     to: dateParam(sp.to),
     lateOnly: firstParam(sp.late) === "1",
+    openOnly: firstParam(sp.open) === "1",
     sort,
     dir,
     page: parsePage(sp.page),
     pageSize: DEFAULT_PAGE_SIZE,
   };
-  const listParams = { ...filterParams, from: listQuery.from, to: listQuery.to, late: listQuery.lateOnly ? "1" : undefined };
+  const listParams = { ...filterParams, from: listQuery.from, to: listQuery.to, late: listQuery.lateOnly ? "1" : undefined, open: listQuery.openOnly ? "1" : undefined };
 
   const calendarItems = view === "calendar" ? await deliveryService.listCalendar(user, { ...filters, ...gridRange(month) }) : [];
   const listPage = view === "list" ? await deliveryService.listDeliveries(user, listQuery) : { items: [], total: 0 };

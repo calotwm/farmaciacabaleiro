@@ -19,7 +19,9 @@ import {
   type SearchParams,
   uuidParam,
 } from "@/shared/application/list-query";
+import { readGeneralSettings } from "@/modules/settings/infrastructure/read-general-settings";
 import { isValidCalendarDate } from "@/shared/domain/dates";
+import { prisma } from "@/shared/infrastructure/db/prisma";
 
 export const metadata: Metadata = { title: "Lotes - Farmacia Cabaleiro" };
 
@@ -44,6 +46,7 @@ export default async function LotsPage({ searchParams }: { searchParams: Promise
     status: parseOption(sp.status, LOT_STATUS_FILTERS, ""),
     expiryFrom: validDate(sp.expiryFrom),
     expiryTo: validDate(sp.expiryTo),
+    withStock: firstParam(sp.withStock) === "1",
     sort: parseOption(sp.sort, LOT_SORT_FIELDS, "expiry"),
     dir: parseSortDirection(sp.dir, "asc"),
     page: parsePage(sp.page),
@@ -59,6 +62,7 @@ export default async function LotsPage({ searchParams }: { searchParams: Promise
       : Promise.resolve(null),
   ]);
 
+  const { expiryThresholds: thresholds } = await readGeneralSettings(prisma);
   const params = {
     search: query.search,
     productId: query.productId,
@@ -67,6 +71,7 @@ export default async function LotsPage({ searchParams }: { searchParams: Promise
     status: query.status || undefined,
     expiryFrom: query.expiryFrom,
     expiryTo: query.expiryTo,
+    withStock: query.withStock ? "1" : undefined,
   };
 
   return (
@@ -85,7 +90,7 @@ export default async function LotsPage({ searchParams }: { searchParams: Promise
         categories={categories.map((c) => ({ value: c.id, label: c.name }))}
         suppliers={suppliers.map((s) => ({ value: s.id, label: s.name }))}
       />
-      <LotsTable lots={items} today={today} sort={query.sort} dir={query.dir} params={params} />
+      <LotsTable lots={items} today={today} thresholds={thresholds} sort={query.sort} dir={query.dir} params={params} />
       <Pagination basePath="/lotes" params={{ ...params, sort: query.sort, dir: query.dir }} page={query.page} pageSize={query.pageSize} total={total} />
     </div>
   );

@@ -68,6 +68,8 @@ export interface ProductListQuery {
   categoryId?: string;
   supplierId?: string;
   status: ProductStatusFilter;
+  /** Only active products that are out of stock ("out") or at/below their minimum ("low"). */
+  stock?: "low" | "out";
   sort: ProductSortField;
   dir: "asc" | "desc";
   page: number;
