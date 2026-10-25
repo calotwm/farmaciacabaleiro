@@ -1,4 +1,4 @@
-import type { Prisma } from "@/generated/prisma/client";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 /**
  * What repositories need from Prisma. Both `PrismaClient` and an interactive-transaction
@@ -6,6 +6,14 @@ import type { Prisma } from "@/generated/prisma/client";
  * rolled-back one).
  */
 export type DbClient = Prisma.TransactionClient;
+
+/** Runs `work` in one database transaction. Tests inject one that reuses an outer, rolled-back transaction. */
+export type TransactionRunner = <T>(work: (tx: DbClient) => Promise<T>) => Promise<T>;
+
+/** Interactive transactions with room for a remote database (several round trips per operation). */
+export function prismaTransactionRunner(prisma: PrismaClient): TransactionRunner {
+  return (work) => prisma.$transaction(work, { timeout: 30_000, maxWait: 10_000 });
+}
 
 export function isUniqueViolation(error: unknown): boolean {
   return isKnownRequestError(error, "P2002");

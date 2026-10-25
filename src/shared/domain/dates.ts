@@ -69,6 +69,12 @@ export function addDays(date: CalendarDate, days: number): CalendarDate {
   return `${pad(next.getUTCFullYear(), 4)}-${pad(next.getUTCMonth() + 1)}-${pad(next.getUTCDate())}`;
 }
 
+/** The instant at which a calendar date starts (00:00) in the given timezone. */
+export function startOfDayInTz(date: CalendarDate, timeZone: string = DEFAULT_TIMEZONE): Date {
+  const { year, month, day } = toParts(date);
+  return new Date(new TZDate(year, month - 1, day, 0, 0, 0, 0, timeZone).getTime());
+}
+
 /** DD/MM/AAAA, without any timezone conversion. */
 export function formatDate(date: CalendarDate): string {
   const { year, month, day } = toParts(date);
