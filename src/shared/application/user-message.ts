@@ -1,4 +1,4 @@
-import { DomainError } from "../domain/errors";
+import { isDomainError } from "../domain/errors";
 
 const MESSAGES: Record<string, string> = {
   NOT_FOUND: "No se encontró el recurso solicitado.",
@@ -17,6 +17,6 @@ export const UNKNOWN_ERROR_MESSAGE = "Ocurrió un error inesperado. Intentá de 
  * leak internals; DomainError subclasses get their generic message per code.
  */
 export function toUserMessage(error: unknown): string {
-  if (error instanceof DomainError) return error.userMessage ?? MESSAGES[error.code] ?? UNKNOWN_ERROR_MESSAGE;
+  if (isDomainError(error)) return error.userMessage ?? MESSAGES[error.code] ?? UNKNOWN_ERROR_MESSAGE;
   return UNKNOWN_ERROR_MESSAGE;
 }
