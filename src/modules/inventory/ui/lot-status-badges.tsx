@@ -4,10 +4,10 @@ import { cn } from "@/shared/lib/utils";
 import { type LotState, describeLot } from "../domain/lot";
 
 const EXPIRY_BADGES = {
-  NORMAL: { label: "Normal", className: "" },
-  WARNING: { label: "Advertencia", className: "border-amber-500/50 bg-amber-500/15 text-amber-900 dark:text-amber-200" },
-  CRITICAL: { label: "Crítico", className: "border-orange-600/50 bg-orange-600/15 text-orange-900 dark:text-orange-200" },
-  EXPIRED: { label: "Vencido", className: "border-destructive/50 bg-destructive/15 text-destructive" },
+  NORMAL: { label: "Normal", className: "text-muted-foreground" },
+  WARNING: { label: "Advertencia", className: "bg-warning-soft text-warning-soft-foreground" },
+  CRITICAL: { label: "Crítico", className: "bg-warning-soft font-semibold text-warning-soft-foreground ring-1 ring-warning/60 ring-inset" },
+  EXPIRED: { label: "Vencido", className: "bg-danger-soft font-semibold text-danger-soft-foreground" },
 } as const;
 
 const HELD_LABELS = { QUARANTINE: "Cuarentena", BLOCKED: "Bloqueado", DEPLETED: "Agotado" } as const;
@@ -39,7 +39,7 @@ export function LotStatusBadges({
   const held = effectiveStatus === "QUARANTINE" || effectiveStatus === "BLOCKED" || effectiveStatus === "DEPLETED" ? effectiveStatus : null;
   return (
     <div className="flex flex-wrap gap-1">
-      <Badge variant="outline" className={cn(bucket.className)}>
+      <Badge variant={expiry.status === "NORMAL" ? "outline" : "ghost"} className={cn(bucket.className)}>
         {bucket.label}
       </Badge>
       {held ? <Badge variant="secondary">{HELD_LABELS[held]}</Badge> : null}
