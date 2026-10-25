@@ -124,7 +124,33 @@ to the days left (the alert bucket the lot is in), or `null`.
 `UnauthenticatedError`, `ValidationError`, `ConflictError`, `RateLimitError`). They are mapped to Spanish messages
 at the edge by `toUserMessage` (`src/shared/application/user-message.ts`); unknown errors never leak internals.
 
-## 7. Accepted assumptions
+## 7. Authentication and authorization
+
+Module `src/modules/auth` (hexagonal: `domain` policies, `application` services + ports, `infrastructure` adapters,
+`ui` forms/actions). Audit entries go through `recordAudit` in `src/modules/audit`.
+
+- **Passwords**: argon2id (`@node-rs/argon2`, OWASP cost profile), minimum 10 characters.
+- **Sessions**: random 32-byte token in the `fc_session` cookie (httpOnly, SameSite=Lax, Secure in production);
+  only its SHA-256 hash is stored in `sessions`. Idle timeout 12 h (sliding, refreshed at most every 5 min),
+  absolute lifetime 7 days. Logout deletes the row; deactivating a user, changing a role or resetting a password
+  deletes all of that user's sessions. The cookie cannot slide in Server Components, so it only caps the absolute
+  lifetime; the DB row is authoritative.
+- **Guards**: `src/middleware.ts` only checks cookie presence and redirects to `/login`. Real validation is
+  `getCurrentUser()`, `requireUser()` and `requirePermission(key)` (`src/modules/auth/server.ts`), called by every
+  server action. Use cases also call `assertPermission(actor, key)`, so the rule holds outside Next.js. Permissions come
+  from Role -> RolePermission; the `admin` role has all of them.
+- **Login rate limit**: 5 failed attempts per email + IP in 15 minutes, counted from `auth.login.failed` audit entries
+  (no extra table). Failures return the generic "Email o contraseña incorrectos"; unknown emails still run a password
+  hash to keep timing similar. The client IP comes from `x-forwarded-for`: the production proxy must set it.
+- **Password reset**: token hash stored (1 h, single use, a new request invalidates older links), sent through the
+  `EmailSender` port (`ConsoleEmailSender` by default, `SmtpEmailSender` when all `SMTP_*` are set). The response is
+  identical whether or not the email exists. Resetting revokes every session.
+- **Bootstrap**: `pnpm admin:create`. The last active admin cannot be demoted or deactivated, and nobody can
+  deactivate themselves.
+- **Audit actions**: `auth.login.success|failed|blocked`, `auth.logout`, `auth.password_reset.requested|completed`,
+  `user.create`, `user.role.change`, `user.activate`, `user.deactivate`.
+
+## 8. Accepted assumptions
 
 1. A lot expires at the end of the stated day; `MM/AAAA` means the last day of the month.
 2. Expired lots only allow write-off/return with a reason.
@@ -133,7 +159,7 @@ at the edge by `toUserMessage` (`src/shared/application/user-message.ts`); unkno
 5. Single tenant, no POS integration.
 6. Zero budget: anything paid is replaced by a free alternative or skipped and documented.
 
-## 8. Decisions (ADR-style)
+## 9. Decisions (ADR-style)
 
 | # | Decision | Why |
 | --- | --- | --- |
@@ -146,4 +172,5 @@ at the edge by `toUserMessage` (`src/shared/application/user-message.ts`); unkno
 | 7 | Separate worker process (node-cron) | Daily jobs without coupling to web requests |
 | 8 | Outbox for push/email | External failures cannot roll back business transactions |
 | 9 | Prisma 7 with the `pg` adapter | Current Prisma architecture; one driver for app and tests |
-| 10 | Railway proxy cert is self-signed | Dev-only `DATABASE_SSL_REJECT_UNAUTHORIZED=false`; production uses private network or verified TLS |
+| 10 | Login rate limit counted from the audit log | No extra table; failures are audited anyway |
+| 11 | Railway proxy cert is self-signed | Dev-only `DATABASE_SSL_REJECT_UNAUTHORIZED=false`; production uses private network or verified TLS |

@@ -1,0 +1,36 @@
+// Run through tsx (not Playwright's CommonJS loader): the generated Prisma client is ESM-only.
+//   tsx user-fixture.ts create   -> prints {"email","password","id"} as JSON
+//   tsx user-fixture.ts delete <id> <email>
+import "dotenv/config";
+import { buildAuthModule } from "../../../src/modules/auth/composition";
+import { prisma } from "../../../src/shared/infrastructure/db/prisma";
+
+const PASSWORD = "e2e-password-12345";
+
+async function create() {
+  const email = `test-e2e-${crypto.randomUUID()}@example.test`;
+  const { userAdminService } = buildAuthModule();
+  const created = await userAdminService.createInitialAdmin({ name: "E2E Admin", email, password: PASSWORD });
+  console.log(JSON.stringify({ id: created.id, email, password: PASSWORD }));
+}
+
+async function remove(id: string, email: string) {
+  await prisma.auditLog.deleteMany({
+    where: { OR: [{ actorId: id }, { entityId: id }, { after: { path: ["email"], equals: email } }] },
+  });
+  await prisma.user.deleteMany({ where: { email } }); // sessions cascade
+}
+
+async function main() {
+  const [command, id, email] = process.argv.slice(2);
+  if (command === "create") await create();
+  else if (command === "delete" && id && email) await remove(id, email);
+  else throw new Error("usage: user-fixture <create | delete <id> <email>>");
+}
+
+main()
+  .catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  })
+  .finally(() => prisma.$disconnect());

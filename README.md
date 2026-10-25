@@ -25,6 +25,19 @@ pnpm dev
 | `pnpm lint` | ESLint |
 | `pnpm typecheck` | TypeScript check (`tsc --noEmit`) |
 | `pnpm test` | Unit tests (Vitest) |
+| `pnpm test:integration` | Integration tests against the dev database |
 | `pnpm test:e2e` | End-to-end tests (Playwright, Chromium) |
+| `pnpm admin:create` | Create the first admin (`ADMIN_EMAIL`, `ADMIN_NAME`; password prompted, or `ADMIN_PASSWORD` for CI) |
 
 First e2e run needs `pnpm exec playwright install chromium`.
+
+## First admin
+
+After `pnpm db:migrate` and `pnpm db:seed`, create the first administrator:
+
+```bash
+ADMIN_EMAIL=you@example.com ADMIN_NAME="Your Name" pnpm admin:create
+```
+
+The script refuses to run if a user with that email already exists and never prints secrets.
+Password reset links are logged to the server console unless SMTP is configured (`SMTP_*` in `.env`).

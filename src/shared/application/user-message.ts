@@ -6,6 +6,7 @@ const MESSAGES: Record<string, string> = {
   UNAUTHENTICATED: "Tenés que iniciar sesión para continuar.",
   VALIDATION: "Revisá los datos ingresados.",
   CONFLICT: "La operación entra en conflicto con el estado actual.",
+  INVALID_CREDENTIALS: "Email o contraseña incorrectos",
   RATE_LIMITED: "Demasiados intentos. Probá de nuevo en unos minutos.",
 };
 
@@ -16,6 +17,6 @@ export const UNKNOWN_ERROR_MESSAGE = "Ocurrió un error inesperado. Intentá de 
  * leak internals; DomainError subclasses get their generic message per code.
  */
 export function toUserMessage(error: unknown): string {
-  if (error instanceof DomainError) return MESSAGES[error.code] ?? UNKNOWN_ERROR_MESSAGE;
+  if (error instanceof DomainError) return error.userMessage ?? MESSAGES[error.code] ?? UNKNOWN_ERROR_MESSAGE;
   return UNKNOWN_ERROR_MESSAGE;
 }
