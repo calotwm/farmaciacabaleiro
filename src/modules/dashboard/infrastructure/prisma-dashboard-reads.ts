@@ -3,6 +3,7 @@ import { type CalendarDate, addDays, fromDbDate, startOfDayInTz, toDbDate } from
 import { productStockLevels } from "@/shared/infrastructure/db/stock-level-sql";
 import type { DbClient } from "@/shared/infrastructure/db/types";
 import type { ExpiringLotRow } from "../domain/expiring-lots";
+import type { LowStockRow, UpcomingDelivery } from "../domain/dashboard-lists";
 import type { DeliveryKpis, StockKpis } from "../domain/kpi-cards";
 
 const OPEN = ["SCHEDULED", "CONFIRMED"] as const;
@@ -50,9 +51,18 @@ export class PrismaDashboardReads {
     return { today: todayCount, next7Days, late, pendingConfirmation };
   }
 
-  /** Lots with stock that are expired or expire within `horizonDays`, soonest first (expired lots lead). */
-  async expiringLots(today: CalendarDate, horizonDays: number, take: number) {
-    const where = { currentQuantity: { gt: 0 }, expiryDate: { lte: toDbDate(addDays(today, horizonDays)) } };
+  /** Lots with stock expiring from today through `horizonDays`, soonest first. Expired lots are listed by `expiredLots`. */
+  upcomingLots(today: CalendarDate, horizonDays: number, take: number) {
+    return this.lotsWithStock({ expiryDate: { gte: toDbDate(today), lte: toDbDate(addDays(today, horizonDays)) }, status: { not: "EXPIRED" } }, take);
+  }
+
+  /** Lots with stock that are already expired (by date or stored status), oldest expiry first. */
+  expiredLots(today: CalendarDate, take: number) {
+    return this.lotsWithStock({ OR: [{ expiryDate: { lt: toDbDate(today) } }, { status: "EXPIRED" }] }, take);
+  }
+
+  private async lotsWithStock(condition: Prisma.LotWhereInput, take: number) {
+    const where: Prisma.LotWhereInput = { AND: [{ currentQuantity: { gt: 0 } }, condition] };
     const [total, lots] = await Promise.all([
       this.db.lot.count({ where }),
       this.db.lot.findMany({
@@ -76,6 +86,29 @@ export class PrismaDashboardReads {
       product: lot.product,
     }));
     return { total, rows };
+  }
+
+  /** Active products with nothing available (first) or at/below their minimum, scarcest first. Same rule as the KPI counts. */
+  async lowStockProducts(today: CalendarDate, take: number): Promise<LowStockRow[]> {
+    const rows = await this.db.$queryRaw<{ id: string; name: string; available: number; minStock: number }[]>(Prisma.sql`
+      WITH levels AS (${productStockLevels(today)})
+      SELECT p.id, p.commercial_name AS name, levels.available, levels.min_stock AS "minStock"
+      FROM levels JOIN products p ON p.id = levels.id
+      WHERE levels.available <= 0 OR levels.available <= levels.min_stock
+      ORDER BY (levels.available > 0), levels.available ASC, p.commercial_name ASC
+      LIMIT ${take}`);
+    return rows;
+  }
+
+  /** The next open (scheduled or confirmed) supplier visits, oldest first so late ones lead. */
+  async upcomingDeliveries(take: number): Promise<UpcomingDelivery[]> {
+    const rows = await this.db.scheduledDelivery.findMany({
+      where: { status: { in: [...OPEN] } },
+      orderBy: [{ scheduledAt: "asc" }, { id: "asc" }],
+      take,
+      select: { id: true, scheduledAt: true, status: true, type: true, supplier: { select: { name: true } } },
+    });
+    return rows.map((row) => ({ id: row.id, supplierName: row.supplier.name, scheduledAt: row.scheduledAt, status: row.status, type: row.type }));
   }
 
   latestMovements(take: number) {
