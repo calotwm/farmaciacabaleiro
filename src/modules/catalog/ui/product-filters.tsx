@@ -24,7 +24,7 @@ const STOCK_OPTIONS: SelectOption[] = [
 /** GET form: filters live in the URL, so results are shareable and need no JavaScript. */
 export function ProductFilters({ values, categories, suppliers }: ProductFiltersProps) {
   return (
-    <form method="get" action="/productos" role="search" aria-label="Filtros de productos" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <form method="get" action="/productos" role="search" aria-label="Filtros de productos" className="bg-card grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-4">
       <input type="hidden" name="sort" value={values.sort} />
       <input type="hidden" name="dir" value={values.dir} />
       <div className="sm:col-span-2 lg:col-span-4">

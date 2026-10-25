@@ -20,7 +20,7 @@ const TYPE_OPTIONS: SelectOption[] = HISTORY_MOVEMENT_TYPES.filter((type) => typ
 /** GET form: every filter lives in the URL. */
 export function MovementFilters({ values, users, productName, lotNumber }: MovementFiltersProps) {
   return (
-    <form method="get" action="/movimientos" role="search" aria-label="Filtros de movimientos" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <form method="get" action="/movimientos" role="search" aria-label="Filtros de movimientos" className="bg-card grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-4">
       {values.productId ? <input type="hidden" name="productId" value={values.productId} /> : null}
       {values.lotId ? <input type="hidden" name="lotId" value={values.lotId} /> : null}
       <div className="sm:col-span-2 lg:col-span-4">

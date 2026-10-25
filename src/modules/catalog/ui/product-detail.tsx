@@ -27,7 +27,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /** Presentational: read-only product data grouped like the form. */
-export function ProductDetail({ product }: { product: ProductRecord }) {
+export function ProductDetail({ product, currency }: { product: ProductRecord; currency?: string }) {
   return (
     <div className="grid gap-4">
       <Section title="Datos generales">
@@ -49,8 +49,8 @@ export function ProductDetail({ product }: { product: ProductRecord }) {
       <Section title="Stock y precios">
         <Row label="Stock mínimo">{product.minStock}</Row>
         <Row label="Stock máximo">{product.maxStock}</Row>
-        <Row label="Precio de costo">{formatMoney(product.costPrice)}</Row>
-        <Row label="Precio de venta">{product.salePrice ? formatMoney(product.salePrice) : null}</Row>
+        <Row label="Precio de costo">{formatMoney(product.costPrice, { currency })}</Row>
+        <Row label="Precio de venta">{product.salePrice ? formatMoney(product.salePrice, { currency }) : null}</Row>
         <Row label="Proveedor habitual">{product.usualSupplierName}</Row>
         <Row label="Ubicación">{product.location}</Row>
       </Section>

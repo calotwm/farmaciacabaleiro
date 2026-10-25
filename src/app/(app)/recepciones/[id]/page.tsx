@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { readGeneralSettings } from "@/modules/settings/infrastructure/read-general-settings";
+import { prisma } from "@/shared/infrastructure/db/prisma";
 import { notFound } from "next/navigation";
 import { AccessDenied } from "@/components/access-denied";
 import { hasPermission } from "@/modules/auth/domain/permissions";
@@ -62,7 +64,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           />
         </>
       ) : (
-        <ReceiptDetail receipt={receipt} movements={movements} canLinkDelivery={hasPermission(user, "deliveries.read")} />
+        <ReceiptDetail receipt={receipt} movements={movements} canLinkDelivery={hasPermission(user, "deliveries.read")} currency={(await readGeneralSettings(prisma)).currency} />
       )}
     </div>
   );

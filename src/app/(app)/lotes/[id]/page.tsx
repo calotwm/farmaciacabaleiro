@@ -30,7 +30,7 @@ export default async function LotPage({ params, searchParams }: { params: Promis
     throw error;
   });
   if (!detail) notFound();
-  const { expiryThresholds: thresholds } = await readGeneralSettings(prisma);
+  const { expiryThresholds: thresholds, currency } = await readGeneralSettings(prisma);
 
   const { lot, today } = detail;
   const history = await stockQueries.listMovements(user, { lotId: id, page, pageSize: DEFAULT_PAGE_SIZE });
@@ -70,7 +70,7 @@ export default async function LotPage({ params, searchParams }: { params: Promis
           ) : null}
         </div>
       </div>
-      <LotDetail lot={lot} today={today} thresholds={thresholds} />
+      <LotDetail lot={lot} today={today} thresholds={thresholds} currency={currency} />
       <section className="grid gap-3" aria-labelledby="lot-history">
         <h2 id="lot-history" className="text-lg font-medium">
           Historial de movimientos

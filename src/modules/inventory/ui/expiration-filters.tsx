@@ -22,7 +22,7 @@ export function ExpirationFilters({
       action="/vencimientos"
       role="search"
       aria-label="Filtros de vencimientos"
-      className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.4fr)_1fr_1fr_auto]"
+      className="bg-card grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.4fr)_1fr_1fr_auto]"
     >
       <input type="hidden" name="bucket" value={bucket} />
       <div className="grid gap-2">

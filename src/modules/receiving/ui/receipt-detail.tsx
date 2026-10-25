@@ -21,10 +21,12 @@ interface ReceiptDetailProps {
   movements: ReceiptMovementView[];
   /** The delivery page needs `deliveries.read`. */
   canLinkDelivery: boolean;
+  /** ISO 4217 code from the settings (defaults to ARS). */
+  currency?: string;
 }
 
 /** Presentational: a receipt with its lines, issues, linked delivery and the stock movements it created. */
-export function ReceiptDetail({ receipt, movements, canLinkDelivery }: ReceiptDetailProps) {
+export function ReceiptDetail({ receipt, movements, canLinkDelivery, currency }: ReceiptDetailProps) {
   return (
     <div className="grid gap-4">
       <Card>
@@ -96,7 +98,7 @@ export function ReceiptDetail({ receipt, movements, canLinkDelivery }: ReceiptDe
                     <TableCell className="text-right tabular-nums">{line.quantity}</TableCell>
                     <TableCell className="text-right tabular-nums">{line.damagedQuantity}</TableCell>
                     <TableCell className="text-right tabular-nums">{goodQuantity(line)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatMoney(line.unitCost)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatMoney(line.unitCost, { currency })}</TableCell>
                   </TableRow>
                 ))
               )}

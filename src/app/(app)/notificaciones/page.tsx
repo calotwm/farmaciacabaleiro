@@ -41,7 +41,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
       {items.length === 0 ? (
         <p className="text-muted-foreground">No hay notificaciones.</p>
       ) : (
-        <ul className="divide-y rounded-xl border">
+        <ul className="bg-card divide-y rounded-xl border">
           {items.map((item) => (
             <li key={item.id} className={cn("flex flex-wrap items-start justify-between gap-3 px-4 py-3", item.readAt && "opacity-60")}>
               <div className="grid min-w-0 gap-0.5">
