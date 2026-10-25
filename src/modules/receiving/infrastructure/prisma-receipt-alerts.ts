@@ -1,6 +1,7 @@
 import { ADMIN_ROLE } from "@/modules/auth/domain/permissions";
 import { type CalendarDate, toDbDate } from "@/shared/domain/dates";
 import type { DbClient } from "@/shared/infrastructure/db/types";
+import { dispatchSafely, type NotificationDispatcher, noopNotificationDispatcher } from "@/modules/alerts/application/ports";
 import type { ReceiptAlerts } from "../application/ports";
 
 /**
@@ -9,7 +10,10 @@ import type { ReceiptAlerts } from "../application/ports";
  * Recipients are active users who can read receipts (admins and roles with `receiving.read`).
  */
 export class PrismaReceiptAlerts implements ReceiptAlerts {
-  constructor(private readonly db: DbClient) {}
+  constructor(
+    private readonly db: DbClient,
+    private readonly dispatcher: NotificationDispatcher = noopNotificationDispatcher,
+  ) {}
 
   async publishIssues(receipt: { id: string; supplierName: string; issueCount: number }, today: CalendarDate): Promise<void> {
     const key = { rule: "RECEIPT_ISSUE" as const, entityType: "receipt", entityId: receipt.id, thresholdKey: "", eventDate: toDbDate(today) };
@@ -29,7 +33,8 @@ export class PrismaReceiptAlerts implements ReceiptAlerts {
       },
       select: { id: true },
     });
-    await this.db.notification.createMany({
+    const created = await this.db.notification.createManyAndReturn({
+      select: { id: true, userId: true, title: true, body: true, priority: true, link: true },
       data: recipients.map((user) => ({
         userId: user.id,
         alertEventId: event.id,
@@ -40,5 +45,7 @@ export class PrismaReceiptAlerts implements ReceiptAlerts {
       })),
       skipDuplicates: true,
     });
+    // Only newly created notifications are returned, so a repeated publication never pushes twice.
+    await dispatchSafely(this.dispatcher, created);
   }
 }

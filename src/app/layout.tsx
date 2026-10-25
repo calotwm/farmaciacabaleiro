@@ -6,6 +6,8 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Farmacia Cabaleiro",
   description: "Gestión de inventario de Farmacia Cabaleiro",
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/icons/icon-192.png", apple: "/icons/icon-192.png" },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
