@@ -52,3 +52,33 @@ describe("dashboard stock levels", () => {
     });
   });
 });
+
+describe("dashboard expiring lots", () => {
+  it("returns expired and soon-to-expire lots with stock, soonest first, and counts them", async () => {
+    await inRolledBackTransaction(async (tx) => {
+      const { categoryId, unitId } = await seededCategoryAndUnit(tx);
+      const reads = new PrismaDashboardReads(tx);
+      const before = await reads.expiringLots(TODAY, 30, 1);
+
+      const product = await tx.product.create({ data: { code: `TEST-${crypto.randomUUID()}`, commercialName: "TEST hero", categoryId, unitId } });
+      const lot = (expiry: string, quantity: number) =>
+        tx.lot.create({
+          data: { productId: product.id, lotNumber: `L-${crypto.randomUUID()}`, expiryDate: toDbDate(expiry), initialQuantity: quantity, currentQuantity: quantity },
+        });
+      const ancient = await lot(addDays(TODAY, -4000), 2); // expired, sorts before any real lot
+      const older = await lot(addDays(TODAY, -3999), 1);
+      const soon = await lot(addDays(TODAY, 29), 5);
+      await lot(addDays(TODAY, 31), 5); // outside the 30-day horizon
+      await lot(addDays(TODAY, -4001), 0); // no stock: ignored
+
+      const after = await reads.expiringLots(TODAY, 30, 2);
+      expect(after.total - before.total).toBe(3);
+      expect(after.rows.map((row) => row.id)).toEqual([ancient.id, older.id]);
+      expect(after.rows[0]).toMatchObject({ quantity: 2, expiryDate: addDays(TODAY, -4000), product: { id: product.id } });
+
+      const all = await reads.expiringLots(TODAY, 30, 10_000);
+      const ids = all.rows.map((row) => row.id);
+      expect(ids.indexOf(older.id)).toBeLessThan(ids.indexOf(soon.id));
+    });
+  });
+});

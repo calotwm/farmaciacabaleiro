@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { hasPermission } from "@/modules/auth/domain/permissions";
 import { getCurrentUser } from "@/modules/auth/server";
 import { getDashboardModule } from "@/modules/dashboard/composition";
+import { EXPIRING_HORIZON_DAYS, buildExpiringLots } from "@/modules/dashboard/domain/expiring-lots";
 import { buildDeliveryCards, buildStockCards } from "@/modules/dashboard/domain/kpi-cards";
+import { ExpiringHero } from "@/modules/dashboard/ui/expiring-hero";
 import { LatestMovements, UnreadAlerts } from "@/modules/dashboard/ui/dashboard-lists";
 import { KpiGrid } from "@/modules/dashboard/ui/kpi-grid";
 import { prisma } from "@/shared/infrastructure/db/prisma";
@@ -29,19 +31,18 @@ export default async function HomePage() {
   const canSeeDeliveries = hasPermission(user, "deliveries.read");
 
   const settings = await readGeneralSettings(prisma);
-  const [stock, deliveries, movements, alerts] = await Promise.all([
+  const [stock, deliveries, movements, alerts, expiring] = await Promise.all([
     canSeeStock ? reads.stockKpis(today, settings.expiryThresholds) : null,
     canSeeDeliveries ? reads.deliveryKpis(now, today) : null,
     canSeeStock ? reads.latestMovements(10) : [],
     reads.unreadNotifications(user.id, 5),
+    canSeeStock ? reads.expiringLots(today, EXPIRING_HORIZON_DAYS, 8) : null,
   ]);
 
   return (
     <div className="grid gap-8">
-      <div className="grid gap-1">
-        <h1 className="text-3xl font-semibold">Hola, {user.name}</h1>
-        <p className="text-muted-foreground">{settings.pharmacyName}</p>
-      </div>
+      <h1 className="sr-only">Hola, {user.name}</h1>
+      {expiring ? <ExpiringHero items={buildExpiringLots(expiring.rows, today)} total={expiring.total} today={today} /> : null}
       {stock ? <KpiGrid title="Inventario" cards={buildStockCards(stock, today)} /> : null}
       {deliveries ? <KpiGrid title="Entregas" cards={buildDeliveryCards(deliveries, today)} /> : null}
       <div className="grid gap-6 lg:grid-cols-2">
