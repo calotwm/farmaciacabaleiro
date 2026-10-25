@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AccessDenied } from "@/components/access-denied";
+import { SettingsSection } from "@/components/settings-section";
 import { hasPermission } from "@/modules/auth/domain/permissions";
 import { getCurrentUser } from "@/modules/auth/server";
 import { getCatalogModule } from "@/modules/catalog/composition";
@@ -13,9 +14,8 @@ export default async function UnitsPage() {
 
   const units = await getCatalogModule().taxonomyService.list(user, "unit");
   return (
-    <div className="grid gap-4">
-      <h1 className="text-2xl font-semibold">Unidades</h1>
+    <SettingsSection title="Unidades" description="Unidades en las que se cuenta el stock de cada producto.">
       <TaxonomyAdmin kind="unit" items={units} />
-    </div>
+    </SettingsSection>
   );
 }

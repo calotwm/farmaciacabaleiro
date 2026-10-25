@@ -28,3 +28,9 @@ export const generalSettingsSchema = z.object({
 });
 
 export type GeneralSettingsInput = z.infer<typeof generalSettingsSchema>;
+
+/** Pharmacy section of Configuración > General (the thresholds have their own section). */
+export const pharmacySettingsSchema = generalSettingsSchema.pick({ pharmacyName: true, defaultMinStock: true, currency: true });
+
+/** Vencimientos section: only the alert thresholds. */
+export const expirySettingsSchema = generalSettingsSchema.pick({ expiryThresholds: true });

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AccessDenied } from "@/components/access-denied";
+import { SettingsSection } from "@/components/settings-section";
 import { hasPermission } from "@/modules/auth/domain/permissions";
 import { getCurrentUser } from "@/modules/auth/server";
 import { getSettingsModule } from "@/modules/settings/composition";
@@ -14,9 +15,8 @@ export default async function GeneralSettingsPage() {
 
   const settings = await getSettingsModule().generalSettings.get();
   return (
-    <div className="grid gap-4">
-      <h1 className="text-2xl font-semibold">Configuración general</h1>
+    <SettingsSection title="General" description="Nombre de la farmacia, moneda y el stock mínimo con el que arrancan los productos nuevos.">
       <GeneralSettingsForm settings={settings} />
-    </div>
+    </SettingsSection>
   );
 }
