@@ -141,7 +141,7 @@ Module `src/modules/auth` (hexagonal: `domain` policies, `application` services 
   from Role -> RolePermission; the `admin` role has all of them.
 - **Login rate limit**: 5 failed attempts per email + IP in 15 minutes, counted from `auth.login.failed` audit entries
   (no extra table). Failures return the generic "Email o contraseña incorrectos"; unknown emails still run a password
-  hash to keep timing similar. The client IP comes from `x-forwarded-for`: the production proxy must set it.
+  hash to keep timing similar. The client IP comes from `x-real-ip`, which Railway's edge sets; `x-forwarded-for` is client-controlled and ignored.
 - **Password reset**: token hash stored (1 h, single use, a new request invalidates older links), sent through the
   `EmailSender` port (`ConsoleEmailSender` by default, `SmtpEmailSender` when all `SMTP_*` are set). The response is
   identical whether or not the email exists. Resetting revokes every session.
