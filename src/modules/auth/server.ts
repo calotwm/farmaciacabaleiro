@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 import { cache } from "react";
 import { ForbiddenError, UnauthenticatedError } from "@/shared/domain/errors";
 import { getAuthModule } from "./composition";
+import { clientIpFrom } from "./infrastructure/client-ip";
 import { type AuthUser, type PermissionKey, hasPermission } from "./domain/permissions";
 import { SESSION_ABSOLUTE_MS, SESSION_COOKIE_NAME } from "./domain/session-policy";
 
@@ -11,8 +12,7 @@ import { SESSION_ABSOLUTE_MS, SESSION_COOKIE_NAME } from "./domain/session-polic
  */
 
 export async function getClientIp(): Promise<string> {
-  const h = await headers();
-  return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "unknown";
+  return clientIpFrom(await headers());
 }
 
 export async function getUserAgent(): Promise<string | undefined> {
